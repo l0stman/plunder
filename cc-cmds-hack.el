@@ -123,8 +123,7 @@ settings of `c-cleanup-list' are done."
 	    ;; Do all appropriate clean ups
 	    (let ((here (point))
 		  (pos (- (point-max) (point)))
-		  mbeg mend
-		  )
+		  mbeg mend)
 
 	      ;; `}': clean up empty defun braces
 	      (when (c-save-buffer-state ()
@@ -202,8 +201,7 @@ settings of `c-cleanup-list' are done."
 
 	    ;; does a newline go after the brace?
 	    (if (memq 'after newlines)
-		(c-newline-and-indent))
-	    ))))
+		(c-newline-and-indent))))))
 
     ;; blink the paren
     (and (not literal)
@@ -330,5 +328,23 @@ newline cleanups are done if appropriate; see the variable `c-cleanup-list'."
 	       (not executing-kbd-macro)
 	       old-blink-paren
 	       (funcall old-blink-paren))))))
+
+(defun c-hack-snug-do-while (syntax pos)
+  "Dynamically calculate brace hanginess for do-while statements.
+Using this function, `while' clauses that end a `do-while' block will
+remain on the same line as the brace that closes that block.
+
+This function is a modified version of `c-snug-do-while' that works
+with macros.
+
+See `c-hanging-braces-alist' for how to utilize this function as an
+ACTION associated with `block-close' syntax."
+  (save-excursion
+    (if (and (eq syntax 'block-close)
+             (progn (backward-up-list)
+                    (c-forward-sexp -1)
+                    (looking-at "\\<do\\>[^_]")))
+        '(before)
+      '(before after))))
 
 (provide 'cc-cmds-hack)
