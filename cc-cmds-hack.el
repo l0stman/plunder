@@ -17,7 +17,9 @@
   "Delete the trailing blanks before the closing token and move
 past it.  If line-p is true, leave one newline."
   (interactive "*")
-  (backward-up-list -1)
+  (condition-case nil
+      (backward-up-list -1)
+    (scan-error (error "Unbalanced %c." last-command-event)))
   (save-excursion
     (backward-char)
     (delete-region (point)
