@@ -1,7 +1,4 @@
-(substitute-key-definition 'c-electric-brace 'c-hack-electric-brace
-                           c-mode-base-map)
-(substitute-key-definition 'c-electric-paren 'c-hack-electric-paren
-                           c-mode-base-map)
+(require 'cc-cmds)
 
 (defun c-hack-balance (close &keyword indent-p)
   "Insert a corresponding closing token and optionally add a newline."
@@ -29,10 +26,6 @@ past it.  If line-p is true, leave one newline."
                          (if line-p (forward-line) (forward-char))
                          (point))
                      (point-min)))))
-
-(defkeys c-mode-base-map
-  "[" c-hack-bracket
-  "]" c-hack-bracket)
 
 (defun c-hack-bracket (arg)
   "Insert a balanced bracket or move past the closing one."
@@ -336,4 +329,4 @@ newline cleanups are done if appropriate; see the variable `c-cleanup-list'."
 	       old-blink-paren
 	       (funcall old-blink-paren))))))
 
-(provide 'cc-mode-hack)
+(provide 'cc-cmds-hack)
