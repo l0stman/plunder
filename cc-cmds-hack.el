@@ -25,7 +25,8 @@
 
 (defun c-hack-move-past-close (close)
   "Delete the trailing blanks before the closing token and move
-past it.  If line-p is true, leave one newline."
+past it.  If line-p is true, leave one newline. It's possible
+to move past the closing token inside a nested expression."
   (interactive "*")
   ;; Move past close and restore cursor on error.
   (let (ltok rtok (orig (point)))
