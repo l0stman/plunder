@@ -1,4 +1,6 @@
-(require 'cc-cmds)
+(eval-when-compile
+  (require 'cc-cmds)
+  (require 'cl))
 
 (defun inlistp ()
   "Return true if we're inside a C list."
