@@ -27,10 +27,9 @@
 
 (defun c-hack-move-past-close (close)
   "Delete the trailing blanks before the closing token and move
-past it.  If line-p is true, leave one newline. It's possible
-to move past the closing token inside a nested expression."
+past it, eventually leaving a newline.  It's possible to move
+past the closing token inside a nested expression."
   (interactive "*")
-  ;; Move past close and restore cursor on error.
   (let ((orig (point)))
     (flet ((err (&rest args)
                 (goto-char orig) (apply #'error args))
@@ -45,19 +44,18 @@ to move past the closing token inside a nested expression."
               (scan-error (err "Unbalanced %c." close)))
             (setq ltok (char-after)
                   rtok (progn (forward-sexp) (char-before)))
-            (if (not (matchp ltok rtok))
-                (err "Mismatched tokens: %c %c." ltok rtok))
-            while (not (eq rtok close)))))
-
-  (let ((line-p (brace-newlinep close)))
-    (save-excursion
-      (backward-char)
-      (delete-region (point)
-                     (if (re-search-backward "[^ \t\n\\]" nil t)
-                         (progn
-                           (if line-p (forward-line) (forward-char))
-                           (point))
-                       (point-min))))))
+            (unless (matchp ltok rtok)
+              (err "Mismatched tokens: %c %c." ltok rtok))
+            (let ((line-p (newlinep rtok)))
+              (save-excursion
+                (backward-char)
+                (delete-region (point)
+                               (if (re-search-backward "[^ \t\n\\]" nil t)
+                                   (progn
+                                     (if line-p (forward-line) (forward-char))
+                                     (point))
+                                 (point-min)))))
+            until (eq rtok close)))))
 
 (defun c-hack-bracket (arg)
   "Insert a balanced bracket or move past the closing one."
