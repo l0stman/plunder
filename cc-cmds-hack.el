@@ -9,7 +9,6 @@
    (c-save-buffer-state nil (c-guess-basic-syntax))))
 
 (defsubst newlinep (close)
-  "Return true if there should be a newline before the closing token."
   (and (eq close ?\}) (not (inlistp))))
 
 (defun c-hack-balance (close)
@@ -39,7 +38,7 @@ past the closing token inside a nested expression."
                        (and (eq l ?\{) (eq r ?\})))))
       (loop with ltok and rtok
             do
-            (condition-case nil
+            (condition-case ()
                 (backward-up-list)
               (scan-error (err "Unbalanced %c." close)))
             (setq ltok (char-after)
