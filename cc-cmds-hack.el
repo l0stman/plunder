@@ -68,10 +68,8 @@ past the closing token inside a nested expression."
            (c-hack-balance ?\]))
           (t
            (c-hack-move-past-close ?\])
-           (and (not lit)
-                (not executing-kbd-macro)
-                bpf
-                (funcall bpf))))))
+           (when (and (not lit) (not executing-kbd-macro) bpf)
+             (funcall bpf))))))
 
 (defun c-hack-electric-brace (arg)
   "This is a slightly modified version of `c-electric-brace'.
