@@ -61,8 +61,8 @@ past the closing token inside a nested expression."
   "Insert a balanced bracket or move past the closing one."
   (interactive "*P")
   (let ((lit (c-save-buffer-state () (c-in-literal)))
-        (blink-fn blink-paren-function)
-        (blink-paren-function))
+        (bpf blink-paren-function)
+        blink-paren-function)
     (cond (lit (self-insert-command (prefix-numeric-value arg)))
           ((eq last-command-event ?\[)
            (insert ?\[)
@@ -71,8 +71,8 @@ past the closing token inside a nested expression."
            (c-hack-move-past-close ?\])
            (and (not lit)
                 (not executing-kbd-macro)
-                blink-fn
-                (funcall blink-fn))))))
+                bpf
+                (funcall bpf))))))
 
 (defun c-hack-electric-brace (arg)
   "This is a slightly modified version of `c-electric-brace'.
