@@ -15,15 +15,15 @@
 (defun c-hack-balance (close)
   "Insert a corresponding closing token and eventually add a newline."
   (save-excursion
-    (cond ((brace-newlinep close)
-           (let ((p (point)))
-             (insert ?\;)
-             (c-newline-and-indent)
-             (insert close)
-             (c-indent-line-or-region)
-             (goto-char p)
-             (delete-char 1)))
-          (t (insert close)))))
+    (if (brace-newlinep close)
+        (let ((p (point)))
+          (insert ?\;)
+          (c-newline-and-indent)
+          (insert close)
+          (c-indent-line-or-region)
+          (goto-char p)
+          (delete-char 1))
+      (insert close))))
 
 (defun c-hack-move-past-close (close)
   "Delete the trailing blanks before the closing token and move
@@ -31,14 +31,15 @@ past it.  If line-p is true, leave one newline. It's possible
 to move past the closing token inside a nested expression."
   (interactive "*")
   ;; Move past close and restore cursor on error.
-  (let (ltok rtok (orig (point)))
+  (let ((orig (point)))
     (flet ((err (&rest args)
                 (goto-char orig) (apply #'error args))
            (matchp (l r)
                    (or (and (eq l ?\() (eq r ?\)))
                        (and (eq l ?\[) (eq r ?\]))
                        (and (eq l ?\{) (eq r ?\})))))
-      (loop do
+      (loop with ltok and rtok
+            do
             (condition-case nil
                 (backward-up-list)
               (scan-error (err "Unbalanced %c." close)))
@@ -119,7 +120,7 @@ settings of `c-cleanup-list' are done."
             (if c-syntactic-indentation
                 (indent-according-to-mode))
 
-          (let ( ;; shut this up to1o
+          (let ( ;; shut this up too
                 (c-echo-syntactic-information-p nil)
                 newlines
                 ln-syntax br-syntax syntax) ; Syntactic context of the original
