@@ -8,14 +8,14 @@
    '(brace-list-intro brace-list-entry brace-entry-open)
    (c-save-buffer-state nil (c-guess-basic-syntax))))
 
-(defun brace-newlinep (close)
+(defsubst newlinep (close)
   "Return true if there should be a newline before the closing token."
   (and (eq close ?\}) (not (inlistp))))
 
 (defun c-hack-balance (close)
   "Insert a corresponding closing token and eventually add a newline."
   (save-excursion
-    (if (brace-newlinep close)
+    (if (newlinep close)
         (let ((p (point)))
           (insert ?\;)
           (c-newline-and-indent)
