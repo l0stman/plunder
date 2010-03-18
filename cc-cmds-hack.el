@@ -369,4 +369,30 @@ works with macros."
         '(before)
       '(before after))))
 
+(defsubst insert-blank (c)
+  (unless (or (char-equal c ?\t)
+              (char-equal c ?\ )
+              (char-equal c ?\n))
+    (insert ?\ )))
+
+(defun c-hack-raise-sexp ()
+  (interactive "*")
+  (flet ((sexp-endp () (save-excursion (forward-sexp) (point))))
+    (let ((sexp (buffer-substring (point) (sexp-endp))))
+      (c-hack-backward-up-list)
+      (delete-region (point) (sexp-endp))
+      (insert-blank (char-before))
+      (insert sexp))))
+
+(defun c-hack-splice-sexp ()
+  (interactive "*")
+  (save-excursion
+    (c-hack-backward-up-list)
+    (let ((p (point)) (c (char-before)))
+      (forward-sexp)
+      (delete-backward-char 1)
+      (goto-char p)
+      (delete-char 1)
+      (insert-blank c))))
+
 (provide 'cc-cmds-hack)
