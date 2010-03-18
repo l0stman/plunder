@@ -24,37 +24,39 @@
           (delete-char 1))
       (insert close))))
 
+(defun c-hack-backward-up-list (&optional forward-p)
+  (flet ((matchp (l r)
+                 (or (and (eq l ?\() (eq r ?\)))
+                     (and (eq l ?\[) (eq r ?\]))
+                     (and (eq l ?\{) (eq r ?\})))))
+    (up-list)
+    (let ((rtok (char-before))
+          (ltok (progn (backward-sexp) (char-after))))
+      (unless (matchp ltok rtok)
+        (error "Mismatched tokens: %c %c." ltok rtok)))
+    (when forward-p (forward-sexp))))
+
 (defun c-hack-move-past-close (close)
   "Delete the trailing blanks before the closing token and move
 past it, eventually leaving a newline.  It's possible to move
 past the closing token inside a nested expression."
   (interactive "*")
-  (let ((orig (point)))
-    (flet ((err (&rest args)
-                (goto-char orig) (apply #'error args))
-           (matchp (l r)
-                   (or (and (eq l ?\() (eq r ?\)))
-                       (and (eq l ?\[) (eq r ?\]))
-                       (and (eq l ?\{) (eq r ?\})))))
-      (loop with ltok and rtok
-            do
-            (condition-case ()
-                (backward-up-list)
-              (scan-error (err "Unbalanced %c." close)))
-            (setq ltok (char-after)
-                  rtok (progn (forward-sexp) (char-before)))
-            (unless (matchp ltok rtok)
-              (err "Mismatched tokens: %c %c." ltok rtok))
-            (let ((line-p (newlinep rtok)))
-              (save-excursion
-                (backward-char)
-                (delete-region (point)
-                               (if (re-search-backward "[^ \t\n\\]" nil t)
-                                   (progn
-                                     (if line-p (forward-line) (forward-char))
-                                     (point))
-                                 (point-min)))))
-            until (eq rtok close)))))
+  (loop with rtok
+        do
+        (condition-case ()
+            (c-hack-backward-up-list t)
+          (scan-error (error "Unbalanced %c." close)))
+        (setq rtok (char-before))
+        (let ((line-p (newlinep rtok)))
+          (save-excursion
+            (backward-char)
+            (delete-region (point)
+                           (if (re-search-backward "[^ \t\n\\]" nil t)
+                               (progn
+                                 (if line-p (forward-line) (forward-char))
+                                 (point))
+                             (point-min)))))
+        until (eq rtok close)))
 
 (defun c-hack-bracket (arg)
   "Insert a balanced bracket or move past the closing one."
