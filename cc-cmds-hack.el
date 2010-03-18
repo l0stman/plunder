@@ -359,15 +359,8 @@ newline cleanups are done if appropriate; see the variable `c-cleanup-list'."
 	       (funcall old-blink-paren))))))
 
 (defun c-hack-snug-do-while (syntax pos)
-  "Dynamically calculate brace hanginess for do-while statements.
-Using this function, `while' clauses that end a `do-while' block will
-remain on the same line as the brace that closes that block.
-
-This function is a modified version of `c-snug-do-while' that works
-with macros.
-
-See `c-hanging-braces-alist' for how to utilize this function as an
-ACTION associated with `block-close' syntax."
+  "This function is a modified version of `c-snug-do-while' that
+works with macros."
   (save-excursion
     (if (and (eq syntax 'block-close)
              (progn (backward-up-list)
