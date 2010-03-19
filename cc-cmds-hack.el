@@ -37,8 +37,8 @@
     (when forward-p (forward-sexp))))
 
 (defmacro re-bsearch (&rest res)
-  "Search the concatenation of the REs given as arguments
-separated by spaces."
+  "Search backward the concatenation of the REs given as
+arguments separated by spaces."
   (let ((space "\\([ \t\n]\\|\\\\\n\\)*"))
     `(re-search-backward
       (concat ,@(mapcon #'(lambda (args)
@@ -222,10 +222,8 @@ settings of `c-cleanup-list' are done."
     ;; Shut off auto-newline inside a list
     (let ((c-auto-newline (unless (inlistp) c-auto-newline)))
       (when (and c-electric-flag (not literal) (not arg))
-        (if (not (looking-at "[ \t]*\\\\?$"))
-            (if c-syntactic-indentation
-                (indent-according-to-mode))
-          (brace-cleanup))))
+        (cond ((looking-at "[ \t]*\\\\?$") (brace-cleanup))
+              (c-syntactic-indentation (indent-according-to-mode)))))
 
     ;; blink the paren
     (and (not literal)
