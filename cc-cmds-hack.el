@@ -36,6 +36,18 @@
         (error "Mismatched tokens: %c %c." ltok rtok)))
     (when forward-p (forward-sexp))))
 
+(defmacro re-bsearch (&rest res)
+  "Search the concatenation of the REs given as arguments
+separated by spaces."
+  (let ((space "\\([ \t\n]\\|\\\\\n\\)*"))
+    `(re-search-backward
+      (concat ,@(mapcon #'(lambda (args)
+                            (if (cdr args)
+                                (list (car args) space)
+                              (list (car args))))
+                        res))
+      nil t)))
+
 (defun c-hack-move-past-close (close)
   "Delete the trailing blanks before the closing token and move
 past it, eventually leaving a newline.  It's possible to move
@@ -51,7 +63,7 @@ past the closing token inside a nested expression."
           (save-excursion
             (backward-char)
             (delete-region (point)
-                           (if (re-search-backward "[^ \t\n\\]" nil t)
+                           (if (re-bsearch "[^ \t\n\\]")
                                (progn
                                  (if line-p (forward-line) (forward-char))
                                  (point))
@@ -183,14 +195,7 @@ settings of `c-cleanup-list' are done."
                 (when (eq last-command-event ?\{)
                   (cond
                    ((and (memq 'brace-else-brace c-cleanup-list)
-                         (re-search-backward
-                          (concat "}"
-                                  "\\([ \t\n]\\|\\\\\n\\)*"
-                                  "else"
-                                  "\\([ \t\n]\\|\\\\\n\\)*"
-                                  "{"
-                                  "\\=")
-                          nil t))
+                         (re-bsearch "}" "else" "{\\="))
                     (delete-region (match-beginning 0) (match-end 0))
                     (insert-and-inherit "} else {"))
                    ((and (memq 'brace-elseif-brace c-cleanup-list)
@@ -202,19 +207,7 @@ settings of `c-cleanup-list' are done."
                            (eq (char-before) ?\)))
                          (zerop (c-save-buffer-state nil (c-backward-token-2 1 t)))
                          (eq (char-after) ?\()
-                                        ; (progn
-                                        ; (setq tmp (point))
-                         (re-search-backward
-                          (concat "}"
-                                  "\\([ \t\n]\\|\\\\\n\\)*"
-                                  "else"
-                                  "\\([ \t\n]\\|\\\\\n\\)+"
-                                  "if"
-                                  "\\([ \t\n]\\|\\\\\n\\)*"
-                                  "\\=")
-                          nil t)        ;)
-                                        ;(eq (match-end 0) tmp);
-                         )
+                         (re-bsearch "}" "else" "if" "\\="))
                     (delete-region mbeg mend)
                     (goto-char mbeg)
                     (insert ?\ ))))
@@ -286,33 +279,16 @@ newline cleanups are done if appropriate; see the variable `c-cleanup-list'."
 	    (when
 		(and (memq 'brace-elseif-brace c-cleanup-list)
 		     (eq last-command-event ?\()
-		     (re-search-backward
-		      (concat "}"
-			      "\\([ \t\n]\\|\\\\\n\\)*"
-			      "else"
-			      "\\([ \t\n]\\|\\\\\n\\)+"
-			      "if"
-			      "\\([ \t\n]\\|\\\\\n\\)*"
-			      "("
-			      "\\=")
-		      nil t)
+                     (re-bsearch "}" "else" "if" "(\\=")
 		     (not  (c-save-buffer-state () (c-in-literal))))
 	      (delete-region (match-beginning 0) (match-end 0))
 	      (insert-and-inherit "} else if ("))
 
 	    ;; clean up brace-catch-brace
-	    (when
-		(and (memq 'brace-catch-brace c-cleanup-list)
-		     (eq last-command-event ?\()
-		     (re-search-backward
-		      (concat "}"
-			      "\\([ \t\n]\\|\\\\\n\\)*"
-			      "catch"
-			      "\\([ \t\n]\\|\\\\\n\\)*"
-			      "("
-			      "\\=")
-		      nil t)
-		     (not  (c-save-buffer-state () (c-in-literal))))
+	    (when (and (memq 'brace-catch-brace c-cleanup-list)
+                       (eq last-command-event ?\()
+                       (re-bsearch "}" "catch" "(\\=")
+                       (not  (c-save-buffer-state () (c-in-literal))))
 	      (delete-region (match-beginning 0) (match-end 0))
 	      (insert-and-inherit "} catch (")))
 
