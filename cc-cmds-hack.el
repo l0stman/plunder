@@ -183,12 +183,12 @@ past the closing token inside a nested expression."
           (c-newline-and-indent)))))
 
 (defun c-hack-electric-brace (arg)
-  "This is a slightly modified version of `c-electric-brace'.
-It inserts balanced braces or move past a closing one.
+  "This is a modified version of `c-electric-brace'.  It inserts
+balanced braces or move past a closing one.
 
-If `c-electric-flag' is non-nil, the brace is not inside a literal and a
-numeric ARG hasn't been supplied, the command performs several electric
-actions:
+If `c-electric-flag' is non-nil, the brace is not inside a
+literal and a numeric ARG hasn't been supplied, the command
+performs several electric actions:
 
 \(a) If the auto-newline feature is turned on (indicated by \"/la\" on
 the mode line) newlines are inserted before and after the brace as
@@ -219,26 +219,22 @@ settings of `c-cleanup-list' are done."
         (self-insert-command (prefix-numeric-value arg))
       (c-hack-move-past-close ?\}))
 
-    ;; Shut off auto-newline inside a list
+    ;; Shut off auto-newline inside a list.
     (let ((c-auto-newline (unless (inlistp) c-auto-newline)))
       (when (and c-electric-flag (not literal) (not arg))
         (cond ((looking-at "[ \t]*\\\\?$") (brace-cleanup))
               (c-syntactic-indentation (indent-according-to-mode)))))
 
-    ;; blink the paren
-    (and (not literal)
-         (eq last-command-event ?\})
-	 (not executing-kbd-macro)
-	 old-blink-paren
-	 (save-excursion
-	   (c-save-buffer-state nil
-	     (c-backward-syntactic-ws safepos))
-	   (funcall old-blink-paren)))
-
-    ;; Add a closing brace corresponding to an open one.
-    (when (and (eq last-command-event ?\{)
-               (not literal))
-      (c-hack-balance ?\}))))
+    ;; Blink the paren or balance with a closing brace.
+    (unless literal
+      (case last-command-event
+        (?\{ (c-hack-balance ?\}))
+        (?\} (and (not executing-kbd-macro)
+                  old-blink-paren
+                  (save-excursion
+                    (c-save-buffer-state ()
+                      (c-backward-syntactic-ws safepos))
+                    (funcall old-blink-paren))))))))
 
 (defun c-hack-electric-paren (arg)
   "This is a slightly modified version of `c-electric-paren'.
