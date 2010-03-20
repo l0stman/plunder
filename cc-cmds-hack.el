@@ -86,15 +86,15 @@ past the closing token inside a nested expression."
              (funcall bpf))))))
 
 (defun brace-cleanup ()
-  (let ( ;; shut this up too
-        (c-echo-syntactic-information-p nil)
+  (let (c-echo-syntactic-information-p  ; shut this up
         newlines
-        ln-syntax br-syntax syntax) ; Syntactic context of the original
+        (ln-syntax (c-save-buffer-state ((c-syntactic-indentation-in-macros t)
+                                         (c-auto-newline-analysis t))
+                     (c-guess-basic-syntax)))
+        br-syntax syntax)          ; Syntactic context of the original
                                         ; line, of the brace itself, of the
                                         ; line the brace ends up on.
-    (c-save-buffer-state ((c-syntactic-indentation-in-macros t)
-                          (c-auto-newline-analysis t))
-                         (setq ln-syntax (c-guess-basic-syntax)))
+
     (if c-syntactic-indentation
         (c-indent-line ln-syntax))
 
@@ -125,16 +125,16 @@ past the closing token inside a nested expression."
 
         ;; `}': clean up empty defun braces
         (when (c-save-buffer-state ()
-                                   (and (memq 'empty-defun-braces c-cleanup-list)
-                                        (eq last-command-event ?\})
-                                        (c-intersect-lists '(defun-close class-close inline-close)
-                                                           syntax)
-                                        (progn
-                                          (forward-char -1)
-                                          (c-skip-ws-backward)
-                                          (eq (char-before) ?\{))
-                                        ;; make sure matching open brace isn't in a comment
-                                        (not (c-in-literal))))
+                (and (memq 'empty-defun-braces c-cleanup-list)
+                     (eq last-command-event ?\})
+                     (c-intersect-lists '(defun-close class-close inline-close)
+                                        syntax)
+                     (progn
+                       (forward-char -1)
+                       (c-skip-ws-backward)
+                       (eq (char-before) ?\{))
+                     ;; make sure matching open brace isn't in a comment
+                     (not (c-in-literal))))
           (delete-region (point) (1- here))
           (setq here (- (point-max) pos)))
         (goto-char here)
