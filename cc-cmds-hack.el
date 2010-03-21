@@ -110,13 +110,10 @@ past the closing token inside a nested expression."
                   (and (cleanup-p empty-defun-braces)
                        (c-intersect-lists
                         '(defun-close class-close inline-close) syntax)
-                       (progn
-                         (forward-char -1)
-                         (c-skip-ws-backward)
-                         (eq (char-before) ?\{))
+                       (re-bsearch "{" "}")
                        ;; make sure matching open brace isn't in a comment
                        (not (c-in-literal))))
-            (delete-region (point) (1- here))
+            (delete-region (1+ (point)) (1- here))
             (setq here (- (point-max) pos)))
           (goto-char here)
 
