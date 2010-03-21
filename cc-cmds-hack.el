@@ -105,29 +105,28 @@ past the closing token inside a nested expression."
             (pos (- (point-max) (point)))
             mbeg mend)
 
-        ;; `}': clean up empty defun braces
-        (when (c-save-buffer-state ()
-                (and (cleanup-p empty-defun-braces)
-                     (eq last-command-event ?\})
-                     (c-intersect-lists '(defun-close class-close inline-close)
-                                        syntax)
-                     (progn
-                       (forward-char -1)
-                       (c-skip-ws-backward)
-                       (eq (char-before) ?\{))
-                     ;; make sure matching open brace isn't in a comment
-                     (not (c-in-literal))))
-          (delete-region (point) (1- here))
-          (setq here (- (point-max) pos)))
-        (goto-char here)
+        (when (eq last-command-event ?\})
+          ;; `}': clean up empty defun braces
+          (when (c-save-buffer-state ()
+                  (and (cleanup-p empty-defun-braces)
+                       (c-intersect-lists
+                        '(defun-close class-close inline-close) syntax)
+                       (progn
+                         (forward-char -1)
+                         (c-skip-ws-backward)
+                         (eq (char-before) ?\{))
+                       ;; make sure matching open brace isn't in a comment
+                       (not (c-in-literal))))
+            (delete-region (point) (1- here))
+            (setq here (- (point-max) pos)))
+          (goto-char here)
 
-        ;; `}': compact to a one-liner defun?
-        (save-match-data
-          (when (and (eq last-command-event ?\})
-                     (cleanup-p one-line-defun)
-                     (c-intersect-lists '(defun-close) syntax)
-                     (c-try-one-liner))
-            (setq here (- (point-max) pos))))
+          ;; `}': compact to a one-liner defun?
+          (save-match-data
+            (when (and (cleanup-p one-line-defun)
+                       (c-intersect-lists '(defun-close) syntax)
+                       (c-try-one-liner))
+              (setq here (- (point-max) pos)))))
 
         ;; `{': clean up brace-else-brace and brace-elseif-brace
         (when (eq last-command-event ?\{)
