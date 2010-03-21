@@ -95,29 +95,28 @@ past the closing token inside a nested expression."
         (pos (- (point-max) (point))))
     (macrolet ((syntax-p (&rest args) `(c-intersect-lists ',args syntax)))
       (case last-command-event
-       (?\}
-         (when (and (cleanup-p empty-defun-braces)
-                    (syntax-p defun-close class-close inline-close)
-                    (re-bsearch "{" "}\\=")
-                    (not (liter-p)))
-           (delete-region (1+ (point)) (1- here))
-           (setq here (- (point-max) pos)))
-         (goto-char here)
+        (?\}
+         (save-excursion
+           (when (and (cleanup-p empty-defun-braces)
+                      (syntax-p defun-close class-close inline-close)
+                      (re-bsearch "{" "}\\=")
+                      (not (liter-p)))
+             (delete-region (1+ (point)) (1- here))))
          (when (and (cleanup-p one-line-defun)
                     (syntax-p defun-close))
            (c-try-one-liner)))
-       (?\{
-        (cond ((and (cleanup-p brace-else-brace)
-                    (re-bsearch "}" "else" "{\\="))
-               (delete-region (match-beginning 0) (match-end 0))
-               (insert-and-inherit "} else {"))
-              ((cleanup-p brace-elseif-brace)
-               (let* ((mend (progn (goto-char (1- here)) (point)))
-                      (mbeg (progn (c-skip-ws-backward) (point))))
-                 (when (re-bsearch "}" "else" "if" "(.*)" "\\=")
-                   (delete-region mbeg mend)
-                   (goto-char mbeg)
-                   (insert ?\ )))))))
+        (?\{
+         (cond ((and (cleanup-p brace-else-brace)
+                     (re-bsearch "}" "else" "{\\="))
+                (delete-region (match-beginning 0) (match-end 0))
+                (insert-and-inherit "} else {"))
+               ((cleanup-p brace-elseif-brace)
+                (let* ((mend (progn (goto-char (1- here)) (point)))
+                       (mbeg (progn (c-skip-ws-backward) (point))))
+                  (when (re-bsearch "}" "else" "if" "(.*)" "\\=")
+                    (delete-region mbeg mend)
+                    (goto-char mbeg)
+                    (insert ?\ )))))))
 
       (goto-char (- (point-max) pos)))))
 
