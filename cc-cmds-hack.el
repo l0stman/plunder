@@ -89,6 +89,43 @@ past the closing token inside a nested expression."
 
 (defmacro cleanup-p (sym) `(memq ',sym c-cleanup-list))
 
+(defun brace-cleanup (syntax)
+  (let ((here (point))
+        (pos (- (point-max) (point))))
+    (macrolet ((syntax-p (&rest args) `(c-intersect-lists ',args syntax)))
+      (when (eq last-command-event ?\})
+        ;; `}': clean up empty defun braces
+        (when (and (cleanup-p empty-defun-braces)
+                   (syntax-p defun-close class-close inline-close)
+                   (re-bsearch "{" "}")
+                   (not (liter-p)))
+          (delete-region (1+ (point)) (1- here))
+          (setq here (- (point-max) pos)))
+        (goto-char here)
+
+        ;; `}': compact to a one-liner defun?
+        (save-match-data
+          (when (and (cleanup-p one-line-defun)
+                     (syntax-p defun-close)
+                     (c-try-one-liner))
+            (setq here (- (point-max) pos)))))
+
+      ;; `{': clean up brace-else-brace and brace-elseif-brace
+      (when (eq last-command-event ?\{)
+        (cond ((and (cleanup-p brace-else-brace)
+                    (re-bsearch "}" "else" "{\\="))
+               (delete-region (match-beginning 0) (match-end 0))
+               (insert-and-inherit "} else {"))
+              ((cleanup-p brace-elseif-brace)
+               (let* ((mend (progn (goto-char (1- here)) (point)))
+                      (mbeg (progn (c-skip-ws-backward) (point))))
+                 (when (re-bsearch "}" "else" "if" "(.*)" "\\=")
+                   (delete-region mbeg mend)
+                   (goto-char mbeg)
+                   (insert ?\ ))))))
+
+      (goto-char (- (point-max) pos)))))
+
 (defun brace-cleanup-and-indent (lsyn)
   (let* ((bsyn (c-point-syntax))      ; syntactic context of the brace
          (newlines (c-brace-newlines bsyn)))
@@ -96,53 +133,12 @@ past the closing token inside a nested expression."
       (when (and (newlines-p before)
                  (> (current-column) (current-indentation)))
         (if c-syntactic-indentation
-            (newline)                   ; indented after cleanups
+            (newline)                   ; indented only after cleanups
           (c-newline-and-indent)))
       (forward-char)
-      (let ((syntax (if (newlines-p before) bsyn lsyn))
-            (here (point))
-            (pos (- (point-max) (point))))
-        (macrolet ((syntax-p (&rest args) `(c-intersect-lists ',args syntax)))
-          (when (eq last-command-event ?\})
-            ;; `}': clean up empty defun braces
-            (when (and (cleanup-p empty-defun-braces)
-                       (syntax-p defun-close class-close inline-close)
-                       (re-bsearch "{" "}")
-                       (not (liter-p)))
-              (delete-region (1+ (point)) (1- here))
-              (setq here (- (point-max) pos)))
-            (goto-char here)
-
-            ;; `}': compact to a one-liner defun?
-            (save-match-data
-              (when (and (cleanup-p one-line-defun)
-                         (syntax-p defun-close)
-                         (c-try-one-liner))
-                (setq here (- (point-max) pos)))))
-
-          ;; `{': clean up brace-else-brace and brace-elseif-brace
-          (when (eq last-command-event ?\{)
-            (cond ((and (cleanup-p brace-else-brace)
-                        (re-bsearch "}" "else" "{\\="))
-                   (delete-region (match-beginning 0) (match-end 0))
-                   (insert-and-inherit "} else {"))
-                  ((cleanup-p brace-elseif-brace)
-                   (let* ((mend (progn (goto-char (1- here)) (point)))
-                          (mbeg (progn (c-skip-ws-backward) (point))))
-                     (when (re-bsearch "}" "else" "if" "(.*)" "\\=")
-                       (delete-region mbeg mend)
-                       (goto-char mbeg)
-                       (insert ?\ ))))))
-
-          (goto-char (- (point-max) pos))
-
-          ;; Indent the line after the cleanups since it might
-          ;; very well indent differently due to them, e.g. if
-          ;; c-indent-one-line-block is used together with the
-          ;; one-liner-defun cleanup.
-          (when c-syntactic-indentation
-            (c-indent-line))))
-
+      (brace-cleanup (if (newlines-p before) bsyn lsyn))
+      (when c-syntactic-indentation
+        (c-indent-line))
       (when (newlines-p after)
         (c-newline-and-indent)))))
 
