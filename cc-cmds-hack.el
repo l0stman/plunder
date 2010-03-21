@@ -70,10 +70,12 @@ past the closing token inside a nested expression."
                              (point-min)))))
         until (eq rtok close)))
 
+(defmacro liter-p () `(c-save-buffer-state () (c-in-literal)))
+
 (defun c-hack-bracket (arg)
   "Insert a balanced bracket or move past the closing one."
   (interactive "*P")
-  (let ((lit (c-save-buffer-state () (c-in-literal)))
+  (let ((lit (liter-p))
         (bpf blink-paren-function)
         blink-paren-function)
     (cond (lit (self-insert-command (prefix-numeric-value arg)))
@@ -97,9 +99,6 @@ past the closing token inside a nested expression."
             (newline)                   ; indented after cleanups
           (c-newline-and-indent)))
       (forward-char)
-
-      ;; `syntax' is the syntactic context of the line which ends up
-      ;; with the brace on it.
       (let ((syntax (if (newlines-p before) bsyn lsyn))
             (here (point))
             (pos (- (point-max) (point))))
@@ -109,7 +108,7 @@ past the closing token inside a nested expression."
             (when (and (cleanup-p empty-defun-braces)
                        (syntax-p defun-close class-close inline-close)
                        (re-bsearch "{" "}")
-                       (not (c-save-buffer-state () (c-in-literal))))
+                       (not (liter-p)))
               (delete-region (1+ (point)) (1- here))
               (setq here (- (point-max) pos)))
             (goto-char here)
