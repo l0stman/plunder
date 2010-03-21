@@ -12,7 +12,8 @@
   (and (eq close ?\}) (not (inlistp))))
 
 (defun c-hack-balance (close)
-  "Insert a corresponding closing token and eventually add a newline."
+  "Insert a corresponding closing token and eventually add a
+newline."
   (save-excursion
     (if (newlinep close)
         (let ((p (point)))
@@ -102,13 +103,9 @@ past the closing token inside a nested expression."
            (delete-region (1+ (point)) (1- here))
            (setq here (- (point-max) pos)))
          (goto-char here)
-
-         ;; `}': compact to a one-liner defun?
-         (save-match-data
-           (when (and (cleanup-p one-line-defun)
-                      (syntax-p defun-close)
-                      (c-try-one-liner))
-             (setq here (- (point-max) pos)))))
+         (when (and (cleanup-p one-line-defun)
+                    (syntax-p defun-close))
+           (c-try-one-liner)))
        (?\{
         (cond ((and (cleanup-p brace-else-brace)
                     (re-bsearch "}" "else" "{\\="))
