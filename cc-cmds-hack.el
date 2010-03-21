@@ -40,7 +40,7 @@ newline."
 (defmacro re-bsearch (&rest res)
   "Search backward the concatenation of the REs given as
 arguments separated by spaces."
-  (let ((space "\\([ \t\n]\\|\\\\\n\\)*"))
+  (let ((space "\\(?:[ \t\n]\\|\\\\\n\\)*"))
     `(re-search-backward
       (concat ,@(mapcon #'(lambda (args)
                             (if (cdr args)
@@ -109,13 +109,11 @@ past the closing token inside a nested expression."
                      (re-bsearch "}" "else" "{\\="))
                 (delete-region (match-beginning 0) (match-end 0))
                 (insert-and-inherit "} else {"))
-               ((cleanup-p brace-elseif-brace)
-                (let* ((mend (progn (backward-char) (point)))
-                       (mbeg (progn (c-skip-ws-backward) (point))))
-                  (when (re-bsearch "}" "else" "if" "(.*)" "\\=")
-                    (delete-region mbeg mend)
-                    (goto-char mbeg)
-                    (insert ?\ )))))))
+               ((and (cleanup-p brace-elseif-brace)
+                     (re-bsearch "}" "else" "if" "(.*)\\(" "\\){\\="))
+                (delete-region (match-beginning 1) (match-end 1))
+                (goto-char (match-beginning 1))
+                (insert ?\ )))))
 
       (goto-char (- (point-max) pos)))))
 
