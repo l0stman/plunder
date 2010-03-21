@@ -136,11 +136,7 @@ past the closing token inside a nested expression."
                 ((cleanup-p brace-elseif-brace)
                  (let* ((mend (progn (goto-char (1- here)) (point)))
                         (mbeg (progn (c-skip-ws-backward) (point))))
-                   (when (and (eq (char-before) ?\))
-                              (zerop (c-save-buffer-state nil
-                                       (c-backward-token-2 1 t)))
-                              (eq (char-after) ?\()
-                              (re-bsearch "}" "else" "if" "\\="))
+                   (when (re-bsearch "}" "else" "if" "(.*)" "\\=")
                      (delete-region mbeg mend)
                      (goto-char mbeg)
                      (insert ?\ ))))))
