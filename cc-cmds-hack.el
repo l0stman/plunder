@@ -85,6 +85,8 @@ past the closing token inside a nested expression."
            (when (and (not lit) (not executing-kbd-macro) bpf)
              (funcall bpf))))))
 
+(defmacro cleanup-p (sym) `(memq ',sym c-cleanup-list))
+
 (defun brace-cleanup (lsyn)
   (let* ((bsyn (c-point-syntax))      ; syntactic context of the brace
          (newlines (c-brace-newlines bsyn)))
@@ -105,7 +107,7 @@ past the closing token inside a nested expression."
 
         ;; `}': clean up empty defun braces
         (when (c-save-buffer-state ()
-                (and (memq 'empty-defun-braces c-cleanup-list)
+                (and (cleanup-p empty-defun-braces)
                      (eq last-command-event ?\})
                      (c-intersect-lists '(defun-close class-close inline-close)
                                         syntax)
@@ -122,18 +124,18 @@ past the closing token inside a nested expression."
         ;; `}': compact to a one-liner defun?
         (save-match-data
           (when (and (eq last-command-event ?\})
-                     (memq 'one-liner-defun c-cleanup-list)
+                     (cleanup-p one-line-defun)
                      (c-intersect-lists '(defun-close) syntax)
                      (c-try-one-liner))
             (setq here (- (point-max) pos))))
 
         ;; `{': clean up brace-else-brace and brace-elseif-brace
         (when (eq last-command-event ?\{)
-          (cond ((and (memq 'brace-else-brace c-cleanup-list)
+          (cond ((and (cleanup-p brace-else-brace)
                       (re-bsearch "}" "else" "{\\="))
                  (delete-region (match-beginning 0) (match-end 0))
                  (insert-and-inherit "} else {"))
-                ((and (memq 'brace-elseif-brace c-cleanup-list)
+                ((and (cleanup-p brace-elseif-brace)
                       (progn
                         (goto-char (1- here))
                         (setq mend (point))
@@ -247,7 +249,7 @@ newline cleanups are done if appropriate; see the variable `c-cleanup-list'."
 
 	    ;; clean up brace-elseif-brace
 	    (when
-		(and (memq 'brace-elseif-brace c-cleanup-list)
+		(and (cleanup-p brace-elseif-brace)
 		     (eq last-command-event ?\()
                      (re-bsearch "}" "else" "if" "(\\=")
 		     (not  (c-save-buffer-state () (c-in-literal))))
@@ -255,7 +257,7 @@ newline cleanups are done if appropriate; see the variable `c-cleanup-list'."
 	      (insert-and-inherit "} else if ("))
 
 	    ;; clean up brace-catch-brace
-	    (when (and (memq 'brace-catch-brace c-cleanup-list)
+	    (when (and (cleanup-p brace-catch-brace)
                        (eq last-command-event ?\()
                        (re-bsearch "}" "catch" "(\\=")
                        (not  (c-save-buffer-state () (c-in-literal))))
@@ -269,7 +271,7 @@ newline cleanups are done if appropriate; see the variable `c-cleanup-list'."
 	    (cond
 
 	     ;; space-before-funcall clean-up?
-	     ((and (memq 'space-before-funcall c-cleanup-list)
+	     ((and (cleanup-p space-before-funcall)
 		   (eq last-command-event ?\()
 		   (save-excursion
 		     (backward-char)
@@ -287,7 +289,7 @@ newline cleanups are done if appropriate; see the variable `c-cleanup-list'."
 
 	     ;; compact-empty-funcall clean-up?
              ((c-save-buffer-state ()
-                (and (memq 'compact-empty-funcall c-cleanup-list)
+                (and (cleanup-p compact-empty-funcall)
                      (eq last-command-event ?\))
                      (save-excursion
                        (c-safe (backward-char 2))
