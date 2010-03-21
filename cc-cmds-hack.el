@@ -6,7 +6,7 @@
   "Return true if we're inside a C list."
   (c-intersect-lists
    '(brace-list-intro brace-list-entry brace-entry-open)
-   (c-save-buffer-state nil (c-guess-basic-syntax))))
+   (c-save-buffer-state () (c-guess-basic-syntax))))
 
 (defsubst newlinep (close)
   (and (eq close ?\}) (not (inlistp))))
@@ -85,92 +85,79 @@ past the closing token inside a nested expression."
            (when (and (not lit) (not executing-kbd-macro) bpf)
              (funcall bpf))))))
 
-(defun brace-cleanup (ln-syntax)
-  (let (newlines
-        br-syntax syntax)          ; Syntactic context of the original
-                                        ; line, of the brace itself, of the
-                                        ; line the brace ends up on.
-    (setq br-syntax (c-point-syntax)
-          newlines (c-brace-newlines br-syntax))
-
-    ;; Insert the BEFORE newline, if wanted, and reindent the newline.
-    (if (and (memq 'before newlines)
-             (> (current-column) (current-indentation)))
+(defun brace-cleanup (lsyn)
+  (let* ((bsyn (c-point-syntax))      ; syntactic context of the brace
+         (newlines (c-brace-newlines bsyn)))
+    (macrolet ((newlines-p (sym) `(memq ',sym newlines)))
+      (when (and (newlines-p before)
+                 (> (current-column) (current-indentation)))
         (if c-syntactic-indentation
-            ;; Only a plain newline for now - it's indented
-            ;; after the cleanups when the line has its final
-            ;; appearance.
-            (newline)
+            (newline)                   ; indented after cleanups
           (c-newline-and-indent)))
-    (forward-char)
+      (forward-char)
 
-    ;; `syntax' is the syntactic context of the line which ends up
-    ;; with the brace on it.
-    (setq syntax (if (memq 'before newlines) br-syntax ln-syntax))
+      ;; `syntax' is the syntactic context of the line which ends up
+      ;; with the brace on it.
+      (let ((syntax (if (newlines-p before) bsyn lsyn))
+            (here (point))
+            (pos (- (point-max) (point)))
+            mbeg mend)
 
-    ;; Do all appropriate clean ups
-    (let ((here (point))
-          (pos (- (point-max) (point)))
-          mbeg mend)
+        ;; `}': clean up empty defun braces
+        (when (c-save-buffer-state ()
+                (and (memq 'empty-defun-braces c-cleanup-list)
+                     (eq last-command-event ?\})
+                     (c-intersect-lists '(defun-close class-close inline-close)
+                                        syntax)
+                     (progn
+                       (forward-char -1)
+                       (c-skip-ws-backward)
+                       (eq (char-before) ?\{))
+                     ;; make sure matching open brace isn't in a comment
+                     (not (c-in-literal))))
+          (delete-region (point) (1- here))
+          (setq here (- (point-max) pos)))
+        (goto-char here)
 
-      ;; `}': clean up empty defun braces
-      (when (c-save-buffer-state ()
-              (and (memq 'empty-defun-braces c-cleanup-list)
-                   (eq last-command-event ?\})
-                   (c-intersect-lists '(defun-close class-close inline-close)
-                                      syntax)
-                   (progn
-                     (forward-char -1)
-                     (c-skip-ws-backward)
-                     (eq (char-before) ?\{))
-                   ;; make sure matching open brace isn't in a comment
-                   (not (c-in-literal))))
-        (delete-region (point) (1- here))
-        (setq here (- (point-max) pos)))
-      (goto-char here)
+        ;; `}': compact to a one-liner defun?
+        (save-match-data
+          (when (and (eq last-command-event ?\})
+                     (memq 'one-liner-defun c-cleanup-list)
+                     (c-intersect-lists '(defun-close) syntax)
+                     (c-try-one-liner))
+            (setq here (- (point-max) pos))))
 
-      ;; `}': compact to a one-liner defun?
-      (save-match-data
-        (when
-            (and (eq last-command-event ?\})
-                 (memq 'one-liner-defun c-cleanup-list)
-                 (c-intersect-lists '(defun-close) syntax)
-                 (c-try-one-liner))
-          (setq here (- (point-max) pos))))
+        ;; `{': clean up brace-else-brace and brace-elseif-brace
+        (when (eq last-command-event ?\{)
+          (cond ((and (memq 'brace-else-brace c-cleanup-list)
+                      (re-bsearch "}" "else" "{\\="))
+                 (delete-region (match-beginning 0) (match-end 0))
+                 (insert-and-inherit "} else {"))
+                ((and (memq 'brace-elseif-brace c-cleanup-list)
+                      (progn
+                        (goto-char (1- here))
+                        (setq mend (point))
+                        (c-skip-ws-backward)
+                        (setq mbeg (point))
+                        (eq (char-before) ?\)))
+                      (zerop (c-save-buffer-state nil (c-backward-token-2 1 t)))
+                      (eq (char-after) ?\()
+                      (re-bsearch "}" "else" "if" "\\="))
+                 (delete-region mbeg mend)
+                 (goto-char mbeg)
+                 (insert ?\ ))))
 
-      ;; `{': clean up brace-else-brace and brace-elseif-brace
-      (when (eq last-command-event ?\{)
-        (cond
-         ((and (memq 'brace-else-brace c-cleanup-list)
-               (re-bsearch "}" "else" "{\\="))
-          (delete-region (match-beginning 0) (match-end 0))
-          (insert-and-inherit "} else {"))
-         ((and (memq 'brace-elseif-brace c-cleanup-list)
-               (progn
-                 (goto-char (1- here))
-                 (setq mend (point))
-                 (c-skip-ws-backward)
-                 (setq mbeg (point))
-                 (eq (char-before) ?\)))
-               (zerop (c-save-buffer-state nil (c-backward-token-2 1 t)))
-               (eq (char-after) ?\()
-               (re-bsearch "}" "else" "if" "\\="))
-          (delete-region mbeg mend)
-          (goto-char mbeg)
-          (insert ?\ ))))
+        (goto-char (- (point-max) pos))
 
-      (goto-char (- (point-max) pos))
+        ;; Indent the line after the cleanups since it might
+        ;; very well indent differently due to them, e.g. if
+        ;; c-indent-one-line-block is used together with the
+        ;; one-liner-defun cleanup.
+        (when c-syntactic-indentation
+          (c-indent-line)))
 
-      ;; Indent the line after the cleanups since it might
-      ;; very well indent differently due to them, e.g. if
-      ;; c-indent-one-line-block is used together with the
-      ;; one-liner-defun cleanup.
-      (when c-syntactic-indentation
-        (c-indent-line)))
-
-    ;; does a newline go after the brace?
-    (if (memq 'after newlines)
-        (c-newline-and-indent))))
+      (when (newlines-p after)
+        (c-newline-and-indent)))))
 
 (defun c-hack-electric-brace (arg)
   "This is a modified version of `c-electric-brace'.  It inserts
