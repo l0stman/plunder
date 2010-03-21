@@ -89,7 +89,7 @@ past the closing token inside a nested expression."
 
 (defmacro cleanup-p (sym) `(memq ',sym c-cleanup-list))
 
-(defun brace-cleanup (lsyn)
+(defun brace-cleanup-and-indent (lsyn)
   (let* ((bsyn (c-point-syntax))      ; syntactic context of the brace
          (newlines (c-brace-newlines bsyn)))
     (macrolet ((newlines-p (sym) `(memq ',sym newlines)))
@@ -184,7 +184,7 @@ settings of `c-cleanup-list' are done."
                  (c-indent-line lsyn))
                (when (and c-auto-newline (not (inlistp)))
                  (backward-char)
-                 (brace-cleanup lsyn))))
+                 (brace-cleanup-and-indent lsyn))))
             (c-syntactic-indentation (indent-according-to-mode))))
 
     ;; Blink the paren or balance with a closing brace.
