@@ -93,25 +93,23 @@ past the closing token inside a nested expression."
   (let ((here (point))
         (pos (- (point-max) (point))))
     (macrolet ((syntax-p (&rest args) `(c-intersect-lists ',args syntax)))
-      (when (eq last-command-event ?\})
-        ;; `}': clean up empty defun braces
-        (when (and (cleanup-p empty-defun-braces)
-                   (syntax-p defun-close class-close inline-close)
-                   (re-bsearch "{" "}")
-                   (not (liter-p)))
-          (delete-region (1+ (point)) (1- here))
-          (setq here (- (point-max) pos)))
-        (goto-char here)
+      (case last-command-event
+       (?\}
+         (when (and (cleanup-p empty-defun-braces)
+                    (syntax-p defun-close class-close inline-close)
+                    (re-bsearch "{" "}")
+                    (not (liter-p)))
+           (delete-region (1+ (point)) (1- here))
+           (setq here (- (point-max) pos)))
+         (goto-char here)
 
-        ;; `}': compact to a one-liner defun?
-        (save-match-data
-          (when (and (cleanup-p one-line-defun)
-                     (syntax-p defun-close)
-                     (c-try-one-liner))
-            (setq here (- (point-max) pos)))))
-
-      ;; `{': clean up brace-else-brace and brace-elseif-brace
-      (when (eq last-command-event ?\{)
+         ;; `}': compact to a one-liner defun?
+         (save-match-data
+           (when (and (cleanup-p one-line-defun)
+                      (syntax-p defun-close)
+                      (c-try-one-liner))
+             (setq here (- (point-max) pos)))))
+       (?\{
         (cond ((and (cleanup-p brace-else-brace)
                     (re-bsearch "}" "else" "{\\="))
                (delete-region (match-beginning 0) (match-end 0))
@@ -122,7 +120,7 @@ past the closing token inside a nested expression."
                  (when (re-bsearch "}" "else" "if" "(.*)" "\\=")
                    (delete-region mbeg mend)
                    (goto-char mbeg)
-                   (insert ?\ ))))))
+                   (insert ?\ )))))))
 
       (goto-char (- (point-max) pos)))))
 
