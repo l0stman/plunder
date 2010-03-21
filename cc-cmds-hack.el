@@ -205,19 +205,15 @@ removed; see the variable `c-cleanup-list'.
 Also, if `c-electric-flag' and `c-auto-newline' are both non-nil, some
 newline cleanups are done if appropriate; see the variable `c-cleanup-list'."
   (interactive "*P")
-  (let* ((literal (c-save-buffer-state () (c-in-literal)))
-         ;; shut this up
-         (c-echo-syntactic-information-p nil)
-         ;; We want to inhibit blinking the paren since this will
-         ;; be most disrputive.  We'll blink it ourselves afterwards.
-         (old-blink-paren blink-paren-function)
+  (let* ((lit (liter-p))
+         c-echo-syntactic-information-p ; shut this up
+         (bpf blink-paren-function)
          blink-paren-function)
-    (if (or literal
-            (eq last-command-event ?\())
+    (if (or lit (eq last-command-event ?\())
         (self-insert-command (prefix-numeric-value arg))
       (c-hack-move-past-close ?\)))
 
-    (if (and (not arg) (not literal))
+    (if (and (not arg) (not lit))
 	(progn
 	  (if (and c-syntactic-indentation c-electric-flag)
 	      (indent-according-to-mode))
@@ -227,11 +223,10 @@ newline cleanups are done if appropriate; see the variable `c-cleanup-list'."
 		     (looking-at "[ \t]*\\\\?$"))
 
 	    ;; clean up brace-elseif-brace
-	    (when
-		(and (cleanup-p brace-elseif-brace)
-		     (eq last-command-event ?\()
-                     (re-bsearch "}" "else" "if" "(\\=")
-		     (not  (c-save-buffer-state () (c-in-literal))))
+	    (when (and (cleanup-p brace-elseif-brace)
+                       (eq last-command-event ?\()
+                       (re-bsearch "}" "else" "if" "(\\=")
+                       (not  (liter-p)))
 	      (delete-region (match-beginning 0) (match-end 0))
 	      (insert-and-inherit "} else if ("))
 
@@ -239,7 +234,7 @@ newline cleanups are done if appropriate; see the variable `c-cleanup-list'."
 	    (when (and (cleanup-p brace-catch-brace)
                        (eq last-command-event ?\()
                        (re-bsearch "}" "catch" "(\\=")
-                       (not  (c-save-buffer-state () (c-in-literal))))
+                       (not (liter-p)))
 	      (delete-region (match-beginning 0) (match-end 0))
 	      (insert-and-inherit "} catch (")))
 
@@ -282,8 +277,8 @@ newline cleanups are done if appropriate; see the variable `c-cleanup-list'."
             (c-hack-balance ?\)))
 	  (and (eq last-input-event ?\))
 	       (not executing-kbd-macro)
-	       old-blink-paren
-	       (funcall old-blink-paren))))))
+	       bpf
+	       (funcall bpf))))))
 
 (defun c-hack-snug-do-while (syntax pos)
   "This function is a modified version of `c-snug-do-while' that
