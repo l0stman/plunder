@@ -26,6 +26,9 @@ newline."
       (insert close))))
 
 (defun c-hack-backward-up-list (&optional forward-p)
+  "Move backward or forward if forward-p is true out of one level
+of parentheses."
+  (interactive)
   (flet ((matchp (l r)
                  (or (and (eq l ?\() (eq r ?\)))
                      (and (eq l ?\[) (eq r ?\]))
@@ -90,8 +93,11 @@ past the closing token inside a nested expression."
 
 (defmacro cleanup-p (sym) `(memq ',sym c-cleanup-list))
 
-(defun brace-cleanup (syntax)
-  (macrolet ((syntax-p (&rest args) `(c-intersect-lists ',args syntax)))
+(defun brace-cleanup (syn)
+  "Do various newline cleanups based on the settings of
+`c-cleanup-list'. `syn' is the syntactic context of the line the
+brace ends up on."
+  (macrolet ((syntax-p (&rest args) `(c-intersect-lists ',args syn)))
     (case last-command-event
       (?\}
        (save-excursion
@@ -116,7 +122,10 @@ past the closing token inside a nested expression."
               (forward-char)))))))
 
 (defun brace-cleanup-and-indent (lsyn)
-  (let* ((bsyn (c-point-syntax))      ; syntactic context of the brace
+  "Indent and do some newline cleanups. The cursor is positioned
+on the brace and `lsyn' is the syntactic context of the original
+line of the brace."
+  (let* ((bsyn (c-point-syntax))
          (newlines (c-brace-newlines bsyn)))
     (macrolet ((newlines-p (sym) `(memq ',sym newlines)))
       (when (and (newlines-p before)
