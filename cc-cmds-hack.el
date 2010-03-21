@@ -102,8 +102,7 @@ past the closing token inside a nested expression."
       ;; with the brace on it.
       (let ((syntax (if (newlines-p before) bsyn lsyn))
             (here (point))
-            (pos (- (point-max) (point)))
-            mbeg mend)
+            (pos (- (point-max) (point))))
 
         (when (eq last-command-event ?\})
           ;; `}': clean up empty defun braces
@@ -134,19 +133,17 @@ past the closing token inside a nested expression."
                       (re-bsearch "}" "else" "{\\="))
                  (delete-region (match-beginning 0) (match-end 0))
                  (insert-and-inherit "} else {"))
-                ((and (cleanup-p brace-elseif-brace)
-                      (progn
-                        (goto-char (1- here))
-                        (setq mend (point))
-                        (c-skip-ws-backward)
-                        (setq mbeg (point))
-                        (eq (char-before) ?\)))
-                      (zerop (c-save-buffer-state nil (c-backward-token-2 1 t)))
-                      (eq (char-after) ?\()
-                      (re-bsearch "}" "else" "if" "\\="))
-                 (delete-region mbeg mend)
-                 (goto-char mbeg)
-                 (insert ?\ ))))
+                ((cleanup-p brace-elseif-brace)
+                 (let* ((mend (progn (goto-char (1- here)) (point)))
+                        (mbeg (progn (c-skip-ws-backward) (point))))
+                   (when (and (eq (char-before) ?\))
+                              (zerop (c-save-buffer-state nil
+                                       (c-backward-token-2 1 t)))
+                              (eq (char-after) ?\()
+                              (re-bsearch "}" "else" "if" "\\="))
+                     (delete-region mbeg mend)
+                     (goto-char mbeg)
+                     (insert ?\ ))))))
 
         (goto-char (- (point-max) pos))
 
