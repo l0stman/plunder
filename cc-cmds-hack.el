@@ -91,8 +91,7 @@ past the closing token inside a nested expression."
 (defmacro cleanup-p (sym) `(memq ',sym c-cleanup-list))
 
 (defun brace-cleanup (syntax)
-  (let ((here (point))
-        (pos (- (point-max) (point))))
+  (let ((pos (- (point-max) (point))))
     (macrolet ((syntax-p (&rest args) `(c-intersect-lists ',args syntax)))
       (case last-command-event
         (?\}
@@ -101,7 +100,7 @@ past the closing token inside a nested expression."
                       (syntax-p defun-close class-close inline-close)
                       (re-bsearch "{" "}\\=")
                       (not (liter-p)))
-             (delete-region (1+ (point)) (1- here))))
+             (delete-region (1+ (point)) (1- (match-end 0)))))
          (when (and (cleanup-p one-line-defun)
                     (syntax-p defun-close))
            (c-try-one-liner)))
@@ -111,7 +110,7 @@ past the closing token inside a nested expression."
                 (delete-region (match-beginning 0) (match-end 0))
                 (insert-and-inherit "} else {"))
                ((cleanup-p brace-elseif-brace)
-                (let* ((mend (progn (goto-char (1- here)) (point)))
+                (let* ((mend (progn (backward-char) (point)))
                        (mbeg (progn (c-skip-ws-backward) (point))))
                   (when (re-bsearch "}" "else" "if" "(.*)" "\\=")
                     (delete-region mbeg mend)
