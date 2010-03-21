@@ -97,7 +97,7 @@ past the closing token inside a nested expression."
        (?\}
          (when (and (cleanup-p empty-defun-braces)
                     (syntax-p defun-close class-close inline-close)
-                    (re-bsearch "{" "}")
+                    (re-bsearch "{" "}\\=")
                     (not (liter-p)))
            (delete-region (1+ (point)) (1- here))
            (setq here (- (point-max) pos)))
