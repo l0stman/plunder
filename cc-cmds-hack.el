@@ -186,20 +186,19 @@ settings of `c-cleanup-list' are done."
         (self-insert-command (prefix-numeric-value arg))
       (c-hack-move-past-close ?\}))
 
-    (let ((c-auto-newline (unless (inlistp) c-auto-newline)))
-      (when (and c-electric-flag (not lit) (not arg))
-        (cond ((looking-at "[ \t]*\\\\?$")
-               (let (c-echo-syntactic-information-p ; shut this up
-                     (lsyn (c-save-buffer-state
-                               ((c-syntactic-indentation-in-macros t)
-                                (c-auto-newline-analysis t))
-                             (c-guess-basic-syntax))))
-                 (when c-syntactic-indentation
-                   (c-indent-line lsyn))
-                 (when c-auto-newline
-                   (backward-char)
-                   (brace-cleanup lsyn))))
-              (c-syntactic-indentation (indent-according-to-mode)))))
+    (when (and c-electric-flag (not lit) (not arg))
+      (cond ((looking-at "[ \t]*\\\\?$")
+             (let (c-echo-syntactic-information-p ; shut this up
+                   (lsyn (c-save-buffer-state
+                             ((c-syntactic-indentation-in-macros t)
+                              (c-auto-newline-analysis t))
+                           (c-guess-basic-syntax))))
+               (when c-syntactic-indentation
+                 (c-indent-line lsyn))
+               (when (and c-auto-newline (not (inlistp)))
+                 (backward-char)
+                 (brace-cleanup lsyn))))
+            (c-syntactic-indentation (indent-according-to-mode))))
 
     ;; Blink the paren or balance with a closing brace.
     (unless lit
