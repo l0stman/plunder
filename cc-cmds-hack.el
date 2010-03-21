@@ -91,31 +91,29 @@ past the closing token inside a nested expression."
 (defmacro cleanup-p (sym) `(memq ',sym c-cleanup-list))
 
 (defun brace-cleanup (syntax)
-  (let ((pos (- (point-max) (point))))
-    (macrolet ((syntax-p (&rest args) `(c-intersect-lists ',args syntax)))
-      (case last-command-event
-        (?\}
-         (save-excursion
-           (when (and (cleanup-p empty-defun-braces)
-                      (syntax-p defun-close class-close inline-close)
-                      (re-bsearch "{" "}\\=")
-                      (not (liter-p)))
-             (delete-region (1+ (point)) (1- (match-end 0)))))
-         (when (and (cleanup-p one-line-defun)
-                    (syntax-p defun-close))
-           (c-try-one-liner)))
-        (?\{
-         (cond ((and (cleanup-p brace-else-brace)
-                     (re-bsearch "}" "else" "{\\="))
-                (delete-region (match-beginning 0) (match-end 0))
-                (insert-and-inherit "} else {"))
-               ((and (cleanup-p brace-elseif-brace)
-                     (re-bsearch "}" "else" "if" "(.*)\\(" "\\){\\="))
-                (delete-region (match-beginning 1) (match-end 1))
-                (goto-char (match-beginning 1))
-                (insert ?\ )))))
-
-      (goto-char (- (point-max) pos)))))
+  (macrolet ((syntax-p (&rest args) `(c-intersect-lists ',args syntax)))
+    (case last-command-event
+      (?\}
+       (save-excursion
+         (when (and (cleanup-p empty-defun-braces)
+                    (syntax-p defun-close class-close inline-close)
+                    (re-bsearch "{" "}\\=")
+                    (not (liter-p)))
+           (delete-region (1+ (point)) (1- (match-end 0)))))
+       (when (and (cleanup-p one-line-defun)
+                  (syntax-p defun-close))
+         (c-try-one-liner)))
+      (?\{
+       (cond ((and (cleanup-p brace-else-brace)
+                   (re-bsearch "}" "else" "{\\="))
+              (delete-region (match-beginning 0) (match-end 0))
+              (insert-and-inherit "} else {"))
+             ((and (cleanup-p brace-elseif-brace)
+                   (re-bsearch "}" "else" "if" "(.*)\\(" "\\){\\="))
+              (delete-region (match-beginning 1) (match-end 1))
+              (goto-char (match-beginning 1))
+              (insert ?\ )
+              (forward-char)))))))
 
 (defun brace-cleanup-and-indent (lsyn)
   (let* ((bsyn (c-point-syntax))      ; syntactic context of the brace
