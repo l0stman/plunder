@@ -215,16 +215,17 @@ newline cleanups are done if appropriate; see the variable `c-cleanup-list'."
 
     (if (and (not arg) (not lit))
 	(progn
-	  (if (and c-syntactic-indentation c-electric-flag)
-	      (indent-according-to-mode))
+	  (when (and c-syntactic-indentation c-electric-flag)
+            (indent-according-to-mode))
 
 	  ;; If we're at EOL, check for new-line clean-ups.
-	  (when (and c-electric-flag c-auto-newline
+	  (when (and c-electric-flag
+                     c-auto-newline
+                     (eq last-command-event ?\()
 		     (looking-at "[ \t]*\\\\?$"))
 
 	    ;; clean up brace-elseif-brace
 	    (when (and (cleanup-p brace-elseif-brace)
-                       (eq last-command-event ?\()
                        (re-bsearch "}" "else" "if" "(\\=")
                        (not  (liter-p)))
 	      (delete-region (match-beginning 0) (match-end 0))
@@ -232,7 +233,6 @@ newline cleanups are done if appropriate; see the variable `c-cleanup-list'."
 
 	    ;; clean up brace-catch-brace
 	    (when (and (cleanup-p brace-catch-brace)
-                       (eq last-command-event ?\()
                        (re-bsearch "}" "catch" "(\\=")
                        (not (liter-p)))
 	      (delete-region (match-beginning 0) (match-end 0))
