@@ -52,6 +52,8 @@ arguments separated by spaces."
                         res))
       nil t)))
 
+(defmacro liter-p () `(c-save-buffer-state () (c-in-literal)))
+
 (defun c-hack-move-past-close (close)
   "Delete the trailing blanks before the closing token and move
 past it, eventually leaving a newline.  It's possible to move
@@ -69,12 +71,12 @@ past the closing token inside a nested expression."
             (delete-region (point)
                            (if (re-bsearch "[^ \t\n\\]")
                                (progn
-                                 (if line-p (forward-line) (forward-char))
+                                 (if (or line-p (liter-p))
+                                     (forward-line)
+                                   (forward-char))
                                  (point))
                              (point-min)))))
         until (eq rtok close)))
-
-(defmacro liter-p () `(c-save-buffer-state () (c-in-literal)))
 
 (defun c-hack-bracket (arg)
   "Insert a balanced bracket or move past the closing one."
