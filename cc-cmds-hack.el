@@ -73,8 +73,9 @@ past the closing token inside a nested expression."
             (backward-char)
             (delete-region (point)
                            (if (re-search-backward "[^ \t\n\\]" nil t)
-                               (progn
-                                 (if (or line-p (liter-p))
+                               (let ((lit (liter-p)))
+                                 (if (or line-p
+                                         (and lit (not (eq lit 'string))))
                                      (forward-line)
                                    (forward-char))
                                  (point))
