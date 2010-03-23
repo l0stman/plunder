@@ -231,18 +231,16 @@ newline cleanups are done if appropriate; see the variable `c-cleanup-list'."
       (c-hack-move-past-close ?\)))
 
     (when (and (not arg) (not lit))
-      (when (and c-syntactic-indentation c-electric-flag)
-        (indent-according-to-mode))
-
-      ;; If we're at EOL, check for new-line clean-ups.
-      (when (and c-electric-flag
-                 c-auto-newline
-                 (eq last-command-event ?\()
-                 (looking-at "[ \t]*\\\\?$"))
-        (do-cleanup ((brace-elseif-brace "}" "else" "if" "(\\=")
-                     (insert-and-inherit "} else if ("))
-                    ((brace-catch-brace "}" "catch" "(\\=")
-                     (insert-and-inherit "} catch ("))))
+      (when c-electric-flag
+        (when c-syntactic-indentation
+          (indent-according-to-mode))
+        (when (and c-auto-newline
+                   (eq last-command-event ?\()
+                   (looking-at "[ \t]*\\\\?$"))
+          (do-cleanup ((brace-elseif-brace "}" "else" "if" "(\\=")
+                       (insert-and-inherit "} else if ("))
+                      ((brace-catch-brace "}" "catch" "(\\=")
+                       (insert-and-inherit "} catch (")))))
 
       ;; Check for clean-ups at function calls.  These two DON'T need
       ;; `c-electric-flag' or `c-syntactic-indentation' set.
