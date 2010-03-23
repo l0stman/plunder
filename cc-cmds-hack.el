@@ -99,22 +99,23 @@ past the closing token inside a nested expression."
 (defmacro cleanup-p (sym) `(memq ',sym c-cleanup-list))
 
 (defmacro do-cleanup (&rest entries)
-  `(cond ,@(mapcar #'(lambda (entry)
-                       (destructuring-bind ((type head &rest re) &rest body)
-                           entry
-                         (let ((i 0))
-                           (if (eq :delete-match head)
-                               (progn
-                                 (setq i (car re))
-                                 (pop re))
-                             (push head re))
-                           `((and (cleanup-p ,type) (re-bsearch ,@re))
-                             (delete-region (match-beginning ,i)
-                                            (match-end ,i))
-                             ,@(when (plusp i)
-                                 `((goto-char (match-beginning ,i))))
-                             ,@body))))
-                   entries)))
+  `(cond
+    ,@(mapcar #'(lambda (entry)
+                  (destructuring-bind
+                      ((type head &rest re) &rest body) entry
+                    (let ((i 0))
+                      (if (eq :delete-match head)
+                          (progn
+                            (setq i (car re))
+                            (pop re))
+                        (push head re))
+                      `((and (cleanup-p ,type) (re-bsearch ,@re))
+                        (delete-region (match-beginning ,i)
+                                       (match-end ,i))
+                        ,@(when (plusp i)
+                            `((goto-char (match-beginning ,i))))
+                        ,@body))))
+              entries)))
 
 (defun brace-cleanup (syn)
   "Do various newline cleanups based on the settings of
