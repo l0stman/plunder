@@ -280,12 +280,10 @@ newline cleanups are done if appropriate; see the variable `c-cleanup-list'."
                          (setq beg (point))
                          (c-on-identifier)))))
               (delete-region beg end))))
-          (when (eq last-command-event ?\()
-            (c-hack-balance ?\)))
-	  (and (eq last-input-event ?\))
-	       (not executing-kbd-macro)
-	       bpf
-	       (funcall bpf))))))
+          (case last-command-event
+            (?\( (c-hack-balance ?\)))
+            (?\) (when (and (not executing-kbd-macro) bpf)
+                   (funcall bpf))))))))
 
 (defun c-hack-snug-do-while (syntax pos)
   "This function is a modified version of `c-snug-do-while' that
