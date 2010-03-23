@@ -98,6 +98,24 @@ past the closing token inside a nested expression."
 
 (defmacro cleanup-p (sym) `(memq ',sym c-cleanup-list))
 
+(defmacro do-cleanup (&rest entries)
+  `(cond ,@(mapcar #'(lambda (entry)
+                       (destructuring-bind ((type head &rest re) &rest body)
+                           entry
+                         (let ((i 0))
+                           (if (eq :delete-match head)
+                               (progn
+                                 (setq i (car re))
+                                 (pop re))
+                             (push head re))
+                           `((and (cleanup-p ,type) (re-bsearch ,@re))
+                             (delete-region (match-beginning ,i)
+                                            (match-end ,i))
+                             ,@(when (plusp i)
+                                 `((goto-char (match-beginning ,i))))
+                             ,@body))))
+                   entries)))
+
 (defun brace-cleanup (syn)
   "Do various newline cleanups based on the settings of
 `c-cleanup-list'. `syn' is the syntactic context of the line the
@@ -113,16 +131,12 @@ brace ends up on."
                   (syntax-p defun-close))
          (c-try-one-liner)))
       (?\{
-       (cond ((and (cleanup-p brace-else-brace)
-                   (re-bsearch "}" "else" "{\\="))
-              (delete-region (match-beginning 0) (match-end 0))
-              (insert-and-inherit "} else {"))
-             ((and (cleanup-p brace-elseif-brace)
-                   (re-bsearch "}" "else" "if" "(.*)\\(" "\\){\\="))
-              (delete-region (match-beginning 1) (match-end 1))
-              (goto-char (match-beginning 1))
-              (insert ?\ )
-              (forward-char)))))))
+       (do-cleanup ((brace-else-brace "}" "else" "{\\=")
+                    (insert-and-inherit "} else {"))
+                   ((brace-elseif-brace :delete-match 1
+                                        "}" "else" "if" "(.*)\\(" "\\){\\=")
+                    (insert ?\ )
+                    (forward-char)))))))
 
 (defun brace-cleanup-and-indent (lsyn)
   "Indent and do some newline cleanups. The cursor is positioned
@@ -226,18 +240,10 @@ newline cleanups are done if appropriate; see the variable `c-cleanup-list'."
                      c-auto-newline
                      (eq last-command-event ?\()
 		     (looking-at "[ \t]*\\\\?$"))
-
-	    ;; clean up brace-elseif-brace
-	    (when (and (cleanup-p brace-elseif-brace)
-                       (re-bsearch "}" "else" "if" "(\\="))
-	      (delete-region (match-beginning 0) (match-end 0))
-	      (insert-and-inherit "} else if ("))
-
-	    ;; clean up brace-catch-brace
-	    (when (and (cleanup-p brace-catch-brace)
-                       (re-bsearch "}" "catch" "(\\="))
-	      (delete-region (match-beginning 0) (match-end 0))
-	      (insert-and-inherit "} catch (")))
+            (do-cleanup ((brace-elseif-brace "}" "else" "if" "(\\=")
+                         (insert-and-inherit "} else if ("))
+                        ((brace-catch-brace "}" "catch" "(\\=")
+                         (insert-and-inherit "} catch ("))))
 
 	  ;; Check for clean-ups at function calls.  These two DON'T need
 	  ;; `c-electric-flag' or `c-syntactic-indentation' set.
