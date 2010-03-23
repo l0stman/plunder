@@ -40,19 +40,22 @@ of parentheses."
         (error "Mismatched tokens: %c %c." ltok rtok)))
     (when forward-p (forward-sexp))))
 
+(defmacro liter-p () `(c-save-buffer-state () (c-in-literal)))
+
 (defmacro re-bsearch (&rest res)
   "Search backward the concatenation of the REs given as
-arguments separated by spaces."
+arguments separated by spaces.  Returns true if the beginning of
+the match is not in a literal."
   (let ((space "\\(?:[ \t\n]\\|\\\\\n\\)*"))
-    `(re-search-backward
-      (concat ,@(mapcon #'(lambda (args)
-                            (if (cdr args)
-                                (list (car args) space)
-                              (list (car args))))
-                        res))
-      nil t)))
-
-(defmacro liter-p () `(c-save-buffer-state () (c-in-literal)))
+    `(save-excursion
+       (and (re-search-backward
+             (concat ,@(mapcon #'(lambda (args)
+                                   (if (cdr args)
+                                       (list (car args) space)
+                                     (list (car args))))
+                               res))
+             nil t)
+            (not (liter-p))))))
 
 (defun c-hack-move-past-close (close)
   "Delete the trailing blanks before the closing token and move
@@ -69,7 +72,7 @@ past the closing token inside a nested expression."
           (save-excursion
             (backward-char)
             (delete-region (point)
-                           (if (re-bsearch "[^ \t\n\\]")
+                           (if (re-search-backward "[^ \t\n\\]" nil t)
                                (progn
                                  (if (or line-p (liter-p))
                                      (forward-line)
@@ -102,12 +105,10 @@ brace ends up on."
   (macrolet ((syntax-p (&rest args) `(c-intersect-lists ',args syn)))
     (case last-command-event
       (?\}
-       (save-excursion
-         (when (and (cleanup-p empty-defun-braces)
-                    (syntax-p defun-close class-close inline-close)
-                    (re-bsearch "{" "}\\=")
-                    (not (liter-p)))
-           (delete-region (1+ (match-beginning 0)) (1- (match-end 0)))))
+       (when (and (cleanup-p empty-defun-braces)
+                  (syntax-p defun-close class-close inline-close)
+                  (re-bsearch "{" "}\\="))
+         (delete-region (1+ (match-beginning 0)) (1- (match-end 0))))
        (when (and (cleanup-p one-line-defun)
                   (syntax-p defun-close))
          (c-try-one-liner)))
@@ -228,15 +229,13 @@ newline cleanups are done if appropriate; see the variable `c-cleanup-list'."
 
 	    ;; clean up brace-elseif-brace
 	    (when (and (cleanup-p brace-elseif-brace)
-                       (re-bsearch "}" "else" "if" "(\\=")
-                       (not  (liter-p)))
+                       (re-bsearch "}" "else" "if" "(\\="))
 	      (delete-region (match-beginning 0) (match-end 0))
 	      (insert-and-inherit "} else if ("))
 
 	    ;; clean up brace-catch-brace
 	    (when (and (cleanup-p brace-catch-brace)
-                       (re-bsearch "}" "catch" "(\\=")
-                       (not (liter-p)))
+                       (re-bsearch "}" "catch" "(\\="))
 	      (delete-region (match-beginning 0) (match-end 0))
 	      (insert-and-inherit "} catch (")))
 
