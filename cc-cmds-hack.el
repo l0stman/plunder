@@ -222,68 +222,67 @@ removed; see the variable `c-cleanup-list'.
 Also, if `c-electric-flag' and `c-auto-newline' are both non-nil, some
 newline cleanups are done if appropriate; see the variable `c-cleanup-list'."
   (interactive "*P")
-  (let* ((lit (liter-p))
-         c-echo-syntactic-information-p ; shut this up
-         (bpf blink-paren-function)
-         blink-paren-function)
+  (let ((lit (liter-p))
+        c-echo-syntactic-information-p  ; shut this up
+        (bpf blink-paren-function)
+        blink-paren-function)
     (if (or lit (eq last-command-event ?\())
         (self-insert-command (prefix-numeric-value arg))
       (c-hack-move-past-close ?\)))
 
-    (if (and (not arg) (not lit))
-	(progn
-	  (when (and c-syntactic-indentation c-electric-flag)
-            (indent-according-to-mode))
+    (when (and (not arg) (not lit))
+      (when (and c-syntactic-indentation c-electric-flag)
+        (indent-according-to-mode))
 
-	  ;; If we're at EOL, check for new-line clean-ups.
-	  (when (and c-electric-flag
-                     c-auto-newline
-                     (eq last-command-event ?\()
-		     (looking-at "[ \t]*\\\\?$"))
-            (do-cleanup ((brace-elseif-brace "}" "else" "if" "(\\=")
-                         (insert-and-inherit "} else if ("))
-                        ((brace-catch-brace "}" "catch" "(\\=")
-                         (insert-and-inherit "} catch ("))))
+      ;; If we're at EOL, check for new-line clean-ups.
+      (when (and c-electric-flag
+                 c-auto-newline
+                 (eq last-command-event ?\()
+                 (looking-at "[ \t]*\\\\?$"))
+        (do-cleanup ((brace-elseif-brace "}" "else" "if" "(\\=")
+                     (insert-and-inherit "} else if ("))
+                    ((brace-catch-brace "}" "catch" "(\\=")
+                     (insert-and-inherit "} catch ("))))
 
-	  ;; Check for clean-ups at function calls.  These two DON'T need
-	  ;; `c-electric-flag' or `c-syntactic-indentation' set.
-	  ;; Point is currently just after the inserted paren.
-	  (let (beg (end (1- (point))))
-	    (cond
+      ;; Check for clean-ups at function calls.  These two DON'T need
+      ;; `c-electric-flag' or `c-syntactic-indentation' set.
+      ;; Point is currently just after the inserted paren.
+      (let (beg (end (1- (point))))
+        (cond
 
-	     ;; space-before-funcall clean-up?
-	     ((and (cleanup-p space-before-funcall)
-		   (eq last-command-event ?\()
-		   (save-excursion
-		     (backward-char)
-		     (skip-chars-backward " \t")
-		     (setq beg (point))
-		     (and (c-save-buffer-state () (c-on-identifier))
-                          ;; Don't add a space into #define FOO()....
-                          (not (and (c-beginning-of-macro)
-                                    (c-forward-over-cpp-define-id)
-                                    (eq (point) beg))))))
-	      (save-excursion
-		(delete-region beg end)
-		(goto-char beg)
-		(insert ?\ )))
+         ;; space-before-funcall clean-up?
+         ((and (cleanup-p space-before-funcall)
+               (eq last-command-event ?\()
+               (save-excursion
+                 (backward-char)
+                 (skip-chars-backward " \t")
+                 (setq beg (point))
+                 (and (c-save-buffer-state () (c-on-identifier))
+                      ;; Don't add a space into #define FOO()....
+                      (not (and (c-beginning-of-macro)
+                                (c-forward-over-cpp-define-id)
+                                (eq (point) beg))))))
+          (save-excursion
+            (delete-region beg end)
+            (goto-char beg)
+            (insert ?\ )))
 
-	     ;; compact-empty-funcall clean-up?
-             ((c-save-buffer-state ()
-                (and (cleanup-p compact-empty-funcall)
-                     (eq last-command-event ?\))
-                     (save-excursion
-                       (c-safe (backward-char 2))
-                       (when (looking-at "()")
-                         (setq end (point))
-                         (skip-chars-backward " \t")
-                         (setq beg (point))
-                         (c-on-identifier)))))
-              (delete-region beg end))))
-          (case last-command-event
-            (?\( (c-hack-balance ?\)))
-            (?\) (when (and (not executing-kbd-macro) bpf)
-                   (funcall bpf))))))))
+         ;; compact-empty-funcall clean-up?
+         ((c-save-buffer-state ()
+            (and (cleanup-p compact-empty-funcall)
+                 (eq last-command-event ?\))
+                 (save-excursion
+                   (c-safe (backward-char 2))
+                   (when (looking-at "()")
+                     (setq end (point))
+                     (skip-chars-backward " \t")
+                     (setq beg (point))
+                     (c-on-identifier)))))
+          (delete-region beg end))))
+      (case last-command-event
+        (?\( (c-hack-balance ?\)))
+        (?\) (when (and (not executing-kbd-macro) bpf)
+               (funcall bpf)))))))
 
 (defun c-hack-snug-do-while (syntax pos)
   "This function is a modified version of `c-snug-do-while' that
