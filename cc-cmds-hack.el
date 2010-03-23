@@ -211,12 +211,12 @@ settings of `c-cleanup-list' are done."
                  (funcall bpf))))))))
 
 (defun c-hack-electric-paren (arg)
-  "This is a slightly modified version of `c-electric-paren'.
-It inserts balanced parenthesis or move past the closing one.
+  "This is a modified version of `c-electric-paren'. It inserts
+ balanced parenthesis or move past the closing one.
 
-If `c-syntactic-indentation' and `c-electric-flag' are both non-nil, the
-line is reindented unless a numeric ARG is supplied, or the parenthesis
-is inserted inside a literal.
+If `c-syntactic-indentation' and `c-electric-flag' are both
+non-nil, the line is reindented unless a numeric ARG is supplied,
+or the parenthesis is inserted inside a literal.
 
 Whitespace between a function name and the parenthesis may get added or
 removed; see the variable `c-cleanup-list'.
