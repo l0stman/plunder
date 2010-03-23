@@ -107,7 +107,7 @@ brace ends up on."
                     (syntax-p defun-close class-close inline-close)
                     (re-bsearch "{" "}\\=")
                     (not (liter-p)))
-           (delete-region (1+ (point)) (1- (match-end 0)))))
+           (delete-region (1+ (match-beginning 0)) (1- (match-end 0)))))
        (when (and (cleanup-p one-line-defun)
                   (syntax-p defun-close))
          (c-try-one-liner)))
