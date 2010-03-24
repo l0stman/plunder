@@ -211,6 +211,7 @@ settings of `c-cleanup-list' are done."
                  (funcall bpf))))))))
 
 (defmacro delspaces (cond &rest body)
+  (declare (indent defun))
   (destructuring-bind (type &key before if) cond
     `(save-excursion
        (when (and (cleanup-p ,type)
@@ -265,7 +266,7 @@ newline cleanups are done if appropriate; see the variable `c-cleanup-list'."
                                   (not (and (c-beginning-of-macro)
                                             (c-forward-over-cpp-define-id)
                                             (eq (point) begin-ws)))))
-                        (insert ?\ ))
+               (insert ?\ ))
              (c-hack-balance ?\)))
         (?\) (delspaces (compact-empty-funcall
                          :before "()"
