@@ -264,16 +264,12 @@ newline cleanups are done if appropriate; see the variable `c-cleanup-list'."
                    (goto-char beg)
                    (insert ?\ )))
                (c-hack-balance ?\)))
-          (?\) (when (c-save-buffer-state ()
-                       (and (cleanup-p compact-empty-funcall)
-                            (save-excursion
-                              (c-safe (backward-char 2))
-                              (when (looking-at "()")
-                                (setq end (point))
-                                (skip-chars-backward " \t")
-                                (setq beg (point))
-                                (c-on-identifier)))))
-                 (delete-region beg end))
+          (?\) (save-excursion
+                 (when (and (cleanup-p compact-empty-funcall)
+                            (re-search-backward "[^ \t]\\(.*\\)()\\=" nil t)
+                            (save-match-data
+                              (c-save-buffer-state () (c-on-identifier))))
+                   (delete-region (match-beginning 1) (match-end 1))))
                (when (and (not executing-kbd-macro) bpf)
                  (funcall bpf))))))))
 
