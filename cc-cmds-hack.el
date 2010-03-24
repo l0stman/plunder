@@ -249,19 +249,17 @@ newline cleanups are done if appropriate; see the variable `c-cleanup-list'."
       ;; Point is currently just after the inserted paren.
       (let (beg (end (1- (point))))
         (case last-command-event
-          (?\( (when (and (cleanup-p space-before-funcall)
-                          (save-excursion
-                            (backward-char)
-                            (skip-chars-backward " \t")
-                            (setq beg (point))
-                            (and (c-save-buffer-state () (c-on-identifier))
-                                 ;; Don't add a space into #define FOO()....
-                                 (not (and (c-beginning-of-macro)
-                                           (c-forward-over-cpp-define-id)
-                                           (eq (point) beg))))))
-                 (save-excursion
-                   (delete-region beg end)
-                   (goto-char beg)
+          (?\( (save-excursion ; don't add a space into #define Foo()...
+                 (when (and (cleanup-p space-before-funcall)
+                            (re-search-backward "[^ \t]\\(.*\\)(\\=" nil t)
+                            (save-match-data
+                              (c-save-buffer-state ((p (1+ (point))))
+                                (and (c-on-identifier)
+                                     (not (and (c-beginning-of-macro)
+                                               (c-forward-over-cpp-define-id)
+                                               (eq p (point))))))))
+                   (delete-region (match-beginning 1) (match-end 1))
+                   (goto-char (match-beginning 1))
                    (insert ?\ )))
                (c-hack-balance ?\)))
           (?\) (save-excursion
