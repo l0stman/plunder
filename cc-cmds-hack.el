@@ -210,6 +210,20 @@ settings of `c-cleanup-list' are done."
                    (c-backward-syntactic-ws sp))
                  (funcall bpf))))))))
 
+(defmacro delspaces (cond &rest body)
+  (destructuring-bind (type &key before if) cond
+    `(save-excursion
+       (when (and (cleanup-p ,type)
+                  (re-search-backward
+                   ,(concat "[^ \t]\\(.*\\)" before "\\=") nil t))
+         (let ((begin-ws (match-beginning 1))
+               (end-ws (match-end 1)))
+           (when (c-save-buffer-state () ,if)
+             (delete-region begin-ws end-ws)
+             ,@(when body
+                 `((goto-char begin-ws)
+                   ,@body))))))))
+
 (defun c-hack-electric-paren (arg)
   "This is a modified version of `c-electric-paren'. It inserts
  balanced parenthesis or move past the closing one.
@@ -244,29 +258,18 @@ newline cleanups are done if appropriate; see the variable `c-cleanup-list'."
                       ((brace-catch-brace "}" "catch" "(\\=")
                        (insert-and-inherit "} catch (")))))
 
-      ;; Check for clean-ups at function calls.  These two DON'T need
-      ;; `c-electric-flag' or `c-syntactic-indentation' set.
-      ;; Point is currently just after the inserted paren.
       (case last-command-event
-        (?\( (save-excursion ; don't add a space into #define Foo()...
-               (when (and (cleanup-p space-before-funcall)
-                          (re-search-backward "[^ \t]\\(.*\\)(\\=" nil t)
-                          (save-match-data
-                            (c-save-buffer-state ((p (1+ (point))))
-                              (and (c-on-identifier)
-                                   (not (and (c-beginning-of-macro)
-                                             (c-forward-over-cpp-define-id)
-                                             (eq p (point))))))))
-                 (delete-region (match-beginning 1) (match-end 1))
-                 (goto-char (match-beginning 1))
-                 (insert ?\ )))
+        (?\( (delspaces (space-before-funcall
+                         :before "("
+                         :if (and (c-on-identifier)
+                                  (not (and (c-beginning-of-macro)
+                                            (c-forward-over-cpp-define-id)
+                                            (eq (point) begin-ws)))))
+                        (insert ?\ ))
              (c-hack-balance ?\)))
-        (?\) (save-excursion
-               (when (and (cleanup-p compact-empty-funcall)
-                          (re-search-backward "[^ \t]\\(.*\\)()\\=" nil t)
-                          (save-match-data
-                            (c-save-buffer-state () (c-on-identifier))))
-                 (delete-region (match-beginning 1) (match-end 1))))
+        (?\) (delspaces (compact-empty-funcall
+                         :before "()"
+                         :if (c-on-identifier)))
              (when (and (not executing-kbd-macro) bpf)
                (funcall bpf)))))))
 
