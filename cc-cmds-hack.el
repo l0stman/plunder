@@ -247,29 +247,28 @@ newline cleanups are done if appropriate; see the variable `c-cleanup-list'."
       ;; Check for clean-ups at function calls.  These two DON'T need
       ;; `c-electric-flag' or `c-syntactic-indentation' set.
       ;; Point is currently just after the inserted paren.
-      (let (beg (end (1- (point))))
-        (case last-command-event
-          (?\( (save-excursion ; don't add a space into #define Foo()...
-                 (when (and (cleanup-p space-before-funcall)
-                            (re-search-backward "[^ \t]\\(.*\\)(\\=" nil t)
-                            (save-match-data
-                              (c-save-buffer-state ((p (1+ (point))))
-                                (and (c-on-identifier)
-                                     (not (and (c-beginning-of-macro)
-                                               (c-forward-over-cpp-define-id)
-                                               (eq p (point))))))))
-                   (delete-region (match-beginning 1) (match-end 1))
-                   (goto-char (match-beginning 1))
-                   (insert ?\ )))
-               (c-hack-balance ?\)))
-          (?\) (save-excursion
-                 (when (and (cleanup-p compact-empty-funcall)
-                            (re-search-backward "[^ \t]\\(.*\\)()\\=" nil t)
-                            (save-match-data
-                              (c-save-buffer-state () (c-on-identifier))))
-                   (delete-region (match-beginning 1) (match-end 1))))
-               (when (and (not executing-kbd-macro) bpf)
-                 (funcall bpf))))))))
+      (case last-command-event
+        (?\( (save-excursion ; don't add a space into #define Foo()...
+               (when (and (cleanup-p space-before-funcall)
+                          (re-search-backward "[^ \t]\\(.*\\)(\\=" nil t)
+                          (save-match-data
+                            (c-save-buffer-state ((p (1+ (point))))
+                              (and (c-on-identifier)
+                                   (not (and (c-beginning-of-macro)
+                                             (c-forward-over-cpp-define-id)
+                                             (eq p (point))))))))
+                 (delete-region (match-beginning 1) (match-end 1))
+                 (goto-char (match-beginning 1))
+                 (insert ?\ )))
+             (c-hack-balance ?\)))
+        (?\) (save-excursion
+               (when (and (cleanup-p compact-empty-funcall)
+                          (re-search-backward "[^ \t]\\(.*\\)()\\=" nil t)
+                          (save-match-data
+                            (c-save-buffer-state () (c-on-identifier))))
+                 (delete-region (match-beginning 1) (match-end 1))))
+             (when (and (not executing-kbd-macro) bpf)
+               (funcall bpf)))))))
 
 (defun c-hack-snug-do-while (syntax pos)
   "This function is a modified version of `c-snug-do-while' that
