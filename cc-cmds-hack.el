@@ -1,4 +1,4 @@
-(eval-when-compile
+(eval-and-compile
   (require 'cc-cmds)
   (require 'cl))
 
