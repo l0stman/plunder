@@ -118,11 +118,11 @@ past the closing token inside a nested expression."
                         ,@body))))
               entries)))
 
-(defun brace-cleanup (syn)
+(defun brace-cleanup (stx)
   "Do various newline cleanups based on the settings of
-`c-cleanup-list'. `syn' is the syntactic context of the line the
+`c-cleanup-list'. `stx' is the syntactic context of the line the
 brace ends up on."
-  (macrolet ((syntax-p (&rest args) `(c-intersect-lists ',args syn)))
+  (macrolet ((syntax-p (&rest args) `(c-intersect-lists ',args stx)))
     (case last-command-event
       (?\}
        (when (and (cleanup-p empty-defun-braces)
@@ -140,12 +140,12 @@ brace ends up on."
                     (insert ?\ )
                     (forward-char)))))))
 
-(defun brace-cleanup-and-indent (lsyn)
+(defun brace-cleanup-and-indent (lstx)
   "Indent and do some newline cleanups. The cursor is positioned
-on the brace and `lsyn' is the syntactic context of the original
+on the brace and `lstx' is the syntactic context of the original
 line of the brace."
-  (let* ((bsyn (c-point-syntax))
-         (newlines (c-brace-newlines bsyn)))
+  (let* ((bstx (c-point-syntax))
+         (newlines (c-brace-newlines bstx)))
     (macrolet ((newlines-p (sym) `(memq ',sym newlines)))
       (when (and (newlines-p before)
                  (> (current-column) (current-indentation)))
@@ -153,7 +153,7 @@ line of the brace."
             (newline)                   ; indented only after cleanups
           (c-newline-and-indent)))
       (forward-char)
-      (brace-cleanup (if (newlines-p before) bsyn lsyn))
+      (brace-cleanup (if (newlines-p before) bstx lstx))
       (when c-syntactic-indentation
         (c-indent-line))
       (when (newlines-p after)
@@ -189,15 +189,15 @@ settings of `c-cleanup-list' are done."
     (when (and c-electric-flag (not lit) (not arg))
       (cond ((looking-at "[ \t]*\\\\?$")
              (let (c-echo-syntactic-information-p ; shut this up
-                   (lsyn (c-save-buffer-state
+                   (lstx (c-save-buffer-state
                              ((c-syntactic-indentation-in-macros t)
                               (c-auto-newline-analysis t))
                            (c-guess-basic-syntax))))
                (when c-syntactic-indentation
-                 (c-indent-line lsyn))
+                 (c-indent-line lstx))
                (when (and c-auto-newline (not (inlistp)))
                  (backward-char)
-                 (brace-cleanup-and-indent lsyn))))
+                 (brace-cleanup-and-indent lstx))))
             (c-syntactic-indentation (indent-according-to-mode))))
 
     ;; Blink the paren or balance with a closing brace.
