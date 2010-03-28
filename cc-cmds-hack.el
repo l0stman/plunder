@@ -12,8 +12,7 @@
   (and (eq close ?\}) (not (inlistp))))
 
 (defun c-hack-balance (close)
-  "Insert a corresponding closing token and eventually add a
-newline."
+  "Eventually insert a newline before inserting the closing token."
   (save-excursion
     (if (newlinep close)
         (let ((p (point)))
