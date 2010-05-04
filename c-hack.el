@@ -2,6 +2,20 @@
   (require 'cc-cmds)
   (require 'cl))
 
+
+(define-minor-mode c-hack-mode
+  "Minor mode for pseudo-structurally editing C code.
+\\{c-hack-mode-map}"
+  :lighter " C-hack"
+  :keymap '(("[" . c-hack-bracket)
+            ("]" . c-hack-bracket)
+            ("{" . c-hack-electric-brace)
+            ("}" . c-hack-electric-brace)
+            ("(" . c-hack-electric-paren)
+            (")" . c-hack-electric-paren)
+            ("\M-s" . c-hack-splice-sexp)
+            ("\M-r" . c-hack-raise-sexp)))
+
 (defun inlistp ()
   "Return true if we're inside a C list."
   (c-intersect-lists
