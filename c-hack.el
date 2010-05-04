@@ -14,7 +14,8 @@
             ("(" . c-hack-electric-paren)
             (")" . c-hack-electric-paren)
             ("\M-s" . c-hack-splice-sexp)
-            ("\M-r" . c-hack-raise-sexp)))
+            ("\M-r" . c-hack-raise-sexp)
+            ("\C-\M-u" . c-hack-backward-up-list)))
 
 (defun inlistp ()
   "Return true if we're inside a C list."
