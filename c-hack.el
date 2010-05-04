@@ -311,4 +311,4 @@ works with macros."
       (delete-char 1)
       (insert-blank))))
 
-(provide 'cc-cmds-hack)
+(provide 'c-hack)
