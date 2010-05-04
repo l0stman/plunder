@@ -2,7 +2,6 @@
   (require 'cc-cmds)
   (require 'cl))
 
-
 (define-minor-mode c-hack-mode
   "Minor mode for pseudo-structurally editing C code.
 \\{c-hack-mode-map}"
