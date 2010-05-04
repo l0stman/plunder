@@ -299,11 +299,8 @@ works with macros."
       '(before after))))
 
 (defsubst insert-blank ()
-  (let ((c (char-before)))
-   (unless (or (char-equal c ?\t)
-               (char-equal c ?\ )
-               (char-equal c ?\n))
-     (insert ?\ ))))
+  (when (and (looking-at "[^ \t\n]") (looking-back "[^ \t\n]"))
+    (insert ?\ )))
 
 (defun c-hack-raise-sexp ()
   (interactive "*")
