@@ -303,27 +303,31 @@ works with macros."
              (looking-back "[^ \t\n]"))
     (insert ?\ )))
 
+(defsubst sexp-endp ()
+  (save-excursion (forward-sexp) (point)))
+
+(defun sexp-or-region ()
+  "Return the beginning and end of the S-expression at point or
+the active region."
+  (if (and mark-active transient-mark-mode)
+      (values (region-beginning) (region-end))
+    (values (point) (sexp-endp))))
+
 (defun c-hack-raise-sexp ()
   "Raise the S-expression after point or the active region to one
 level of parenthesis, braces or brackets -- deleting the other
 ones.
 
-a*(b+|c) -> a* |c"
+a*(b+|c-d) -> a* |c"
 
   (interactive "*")
-  (flet ((sexp-endp () (save-excursion (forward-sexp) (point))))
-    (let (beg end)
-      (if (and mark-active transient-mark-mode)
-          (setq beg (region-beginning)
-                end (region-end))
-        (setq beg (point)
-              end (sexp-endp)))
-      (let ((sexp (buffer-substring beg end))
-            (p (progn (c-hack-backward-up-list) (point))))
-        (delete-region p (sexp-endp))
-        (insert sexp)
-        (goto-char p)
-        (insert-blank)))))
+  (multiple-value-bind (beg end) (sexp-or-region)
+    (let ((sexp (buffer-substring beg end))
+          (p (progn (c-hack-backward-up-list) (point))))
+      (delete-region p (sexp-endp))
+      (insert sexp)
+      (goto-char p)
+      (insert-blank))))
 
 (defun c-hack-splice-sexp ()
   "Splice the list the point is on by removing its delimiters:
