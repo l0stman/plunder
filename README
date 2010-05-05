@@ -1,6 +1,6 @@
 Plunder is an Emacs minor mode for structurally editing C code.  It
 inserts balanced parenthesis, braces and brackets.  It moves the
-cursor past a closing token, even in nested expressions:
+cursor past a closing token, even inside nested expressions:
 
 |----------------------|--------------------|--------------------|
 |   Initial position   |Inserted character  |  Final position    |
