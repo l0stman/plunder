@@ -14,6 +14,8 @@
             (")" . c-hack-electric-paren)
             ("\M-s" . c-hack-splice-sexp)
             ("\M-r" . c-hack-raise-sexp)
+            ("\M-(" . c-hack-wrap-sexp-in-paren)
+            ("\M-[" . c-hack-wrap-sexp-in-bracket)
             ("\C-\M-u" . c-hack-backward-up-list)))
 
 (defun inlistp ()
@@ -306,9 +308,7 @@ works with macros."
 (defsubst sexp-endp ()
   (save-excursion (forward-sexp) (point)))
 
-(defun sexp-or-region ()
-  "Return the beginning and end of the S-expression at point or
-the active region."
+(defsubst sexp-or-region ()
   (if (and mark-active transient-mark-mode)
       (values (region-beginning) (region-end))
     (values (point) (sexp-endp))))
@@ -344,5 +344,31 @@ a * (b + |c) * d -> a * b + |c * d"
       (goto-char p)
       (delete-char 1)
       (insert-blank))))
+
+(defun c-hack-wrap-sexp (open close)
+  (multiple-value-bind (beg end) (sexp-or-region)
+    (let ((sexp (buffer-substring beg end)))
+      (delete-region beg end)
+      (insert open)
+      (insert close)
+      (backward-char)
+      (insert sexp)
+      (c-hack-backward-up-list))))
+
+(defun c-hack-wrap-sexp-in-paren ()
+  "Wrap the S-expression at point or the active region inside
+parenthesis.
+
+|a + b -> |(a) + b"
+  (interactive "*")
+  (c-hack-wrap-sexp ?\( ?\)))
+
+(defun c-hack-wrap-sexp-in-bracket ()
+  "Wrap the S-expression at point or the active region inside
+brackets.
+
+a |i -> a |[i]"
+  (interactive "*")
+  (c-hack-wrap-sexp ?\[ ?\]))
 
 (provide 'c-hack)
