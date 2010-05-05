@@ -14,7 +14,7 @@ To consult the list of all the defined commands see the documentation
 of the function `plunder-mode' under Emacs.
 
 To install plunder, place the file `plunder.el' in a directory
-`/path/to/dir', and add the following entries to .emacs file:
+`/path/to/dir', and add the following entries to your .emacs file:
 
 (add-to-list 'load-path "/path/to/dir")
 (autoload 'plunder-mode "plunder"
