@@ -16,6 +16,7 @@
             ("\M-r" . c-hack-raise-sexp)
             ("\M-(" . c-hack-wrap-sexp-in-paren)
             ("\M-[" . c-hack-wrap-sexp-in-bracket)
+            ("\M-{" . c-hack-wrap-sexp-in-brace)
             ("\C-\M-u" . c-hack-backward-up-list)))
 
 (defun inlistp ()
@@ -374,5 +375,25 @@ brackets.
 a |i -> a |[i]"
   (interactive "*")
   (c-hack-wrap-sexp ?\[ ?\]))
+
+(defun c-hack-wrap-sexp-in-brace ()
+  "Wrap the statement after point or the active region inside
+braces and indent the expression.
+
+|statement -> |{ statement }"
+  (interactive "*")
+  (let (beg end)
+    (if (and mark-active transient-mark-mode)
+        (setq beg (region-beginning)
+              end (region-end))
+      (setq beg (point)
+            end (save-excursion (c-end-of-statement) (point))))
+    (let ((sexp (buffer-substring beg end))
+          (last-command-event ?\{))
+      (delete-region beg end)
+      (c-hack-electric-brace nil)
+      (insert sexp)
+      (c-hack-backward-up-list)
+      (c-indent-exp))))
 
 (provide 'c-hack)
