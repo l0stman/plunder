@@ -308,10 +308,16 @@ works with macros."
 (defsubst sexp-endp ()
   (save-excursion (forward-sexp) (point)))
 
-(defsubst sexp-or-region ()
-  (if (and mark-active transient-mark-mode)
-      (values (region-beginning) (region-end))
-    (values (point) (sexp-endp))))
+(defun sexp-or-region ()
+  "Return the S-expression after point or the active region, the
+locations of the beginning and the end the expression."
+  (let (beg end)
+    (if (and mark-active transient-mark-mode)
+        (setq beg (region-beginning)
+              end (region-end))
+      (setq beg (point)
+            end (sexp-endp)))
+    (values (buffer-substring beg end) beg end)))
 
 (defun c-hack-raise-sexp ()
   "Raise the S-expression after point or the active region to one
@@ -321,9 +327,8 @@ ones.
 a*(b+|c-d) -> a* |c"
 
   (interactive "*")
-  (multiple-value-bind (beg end) (sexp-or-region)
-    (let ((sexp (buffer-substring beg end))
-          (p (progn (c-hack-backward-up-list) (point))))
+  (multiple-value-bind (sexp beg end) (sexp-or-region)
+    (let ((p (progn (c-hack-backward-up-list) (point))))
       (delete-region p (sexp-endp))
       (insert sexp)
       (goto-char p)
@@ -346,14 +351,13 @@ a * (b + |c) * d -> a * b + |c * d"
       (insert-blank))))
 
 (defun c-hack-wrap-sexp (open close)
-  (multiple-value-bind (beg end) (sexp-or-region)
-    (let ((sexp (buffer-substring beg end)))
-      (delete-region beg end)
-      (insert open)
-      (insert close)
-      (backward-char)
-      (insert sexp)
-      (c-hack-backward-up-list))))
+  (multiple-value-bind (sexp beg end) (sexp-or-region)
+    (delete-region beg end)
+    (insert open)
+    (insert close)
+    (backward-char)
+    (insert sexp)
+    (c-hack-backward-up-list)))
 
 (defun c-hack-wrap-sexp-in-paren ()
   "Wrap the S-expression at point or the active region inside
