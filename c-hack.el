@@ -290,17 +290,6 @@ newline cleanups are done if appropriate; see the variable `c-cleanup-list'."
              (when (and (not executing-kbd-macro) bpf)
                (funcall bpf)))))))
 
-(defun c-hack-snug-do-while (syntax pos)
-  "This function is a modified version of `c-snug-do-while' that
-works with macros."
-  (save-excursion
-    (if (and (eq syntax 'block-close)
-             (progn (backward-up-list)
-                    (c-forward-sexp -1)
-                    (looking-at "\\<do\\>[^_]")))
-        '(before)
-      '(before after))))
-
 (defsubst insert-blank ()
   (when (and (looking-at "[^ \t\n]")
              (looking-back "[^ \t\n]"))
