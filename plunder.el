@@ -2,22 +2,22 @@
   (require 'cc-cmds)
   (require 'cl))
 
-(define-minor-mode c-hack-mode
+(define-minor-mode plunder-mode
   "Minor mode for pseudo-structurally editing C code.
-\\{c-hack-mode-map}"
-  :lighter " C-hack"
-  :keymap '(("[" . c-hack-bracket)
-            ("]" . c-hack-bracket)
-            ("{" . c-hack-electric-brace)
-            ("}" . c-hack-electric-brace)
-            ("(" . c-hack-electric-paren)
-            (")" . c-hack-electric-paren)
-            ("\M-s" . c-hack-splice-sexp)
-            ("\M-r" . c-hack-raise-sexp)
-            ("\M-(" . c-hack-wrap-sexp-in-paren)
-            ("\M-[" . c-hack-wrap-sexp-in-bracket)
-            ("\M-{" . c-hack-wrap-sexp-in-brace)
-            ("\C-\M-u" . c-hack-backward-up-list)))
+\\{plunder-mode-map}"
+  :lighter " Plunder"
+  :keymap '(("[" . plunder-bracket)
+            ("]" . plunder-bracket)
+            ("{" . plunder-electric-brace)
+            ("}" . plunder-electric-brace)
+            ("(" . plunder-electric-paren)
+            (")" . plunder-electric-paren)
+            ("\M-s" . plunder-splice-sexp)
+            ("\M-r" . plunder-raise-sexp)
+            ("\M-(" . plunder-wrap-sexp-in-paren)
+            ("\M-[" . plunder-wrap-sexp-in-bracket)
+            ("\M-{" . plunder-wrap-sexp-in-brace)
+            ("\C-\M-u" . plunder-backward-up-list)))
 
 (defun inlistp ()
   "Return true if we're inside a C list."
@@ -28,7 +28,7 @@
 (defsubst newlinep (close)
   (and (eq close ?\}) (not (inlistp))))
 
-(defun c-hack-balance (close)
+(defun plunder-balance (close)
   "Eventually insert a newline before inserting the closing token."
   (save-excursion
     (if (newlinep close)
@@ -41,7 +41,7 @@
           (delete-char 1))
       (insert close))))
 
-(defun c-hack-backward-up-list (&optional forward-p)
+(defun plunder-backward-up-list (&optional forward-p)
   "Move backward or forward if forward-p is true out of one level
 of parentheses."
   (interactive)
@@ -73,7 +73,7 @@ the match is not in a literal."
              nil t)
             (not (liter-p))))))
 
-(defun c-hack-move-past-close (close)
+(defun plunder-move-past-close (close)
   "Delete the trailing blanks before the closing token and move
 past it, eventually leaving a newline.  It's possible to move
 past the closing token inside a nested expression."
@@ -81,7 +81,7 @@ past the closing token inside a nested expression."
   (loop with rtok
         do
         (condition-case ()
-            (c-hack-backward-up-list t)
+            (plunder-backward-up-list t)
           (scan-error (error "Unbalanced %c." close)))
         (setq rtok (char-before))
         (let ((line-p (newlinep rtok)))
@@ -98,7 +98,7 @@ past the closing token inside a nested expression."
                              (point-min)))))
         until (eq rtok close)))
 
-(defun c-hack-bracket (arg)
+(defun plunder-bracket (arg)
   "Insert a balanced bracket or move past the closing one."
   (interactive "*P")
   (let ((lit (liter-p))
@@ -107,9 +107,9 @@ past the closing token inside a nested expression."
     (cond (lit (self-insert-command (prefix-numeric-value arg)))
           ((eq last-command-event ?\[)
            (insert ?\[)
-           (c-hack-balance ?\]))
+           (plunder-balance ?\]))
           (t
-           (c-hack-move-past-close ?\])
+           (plunder-move-past-close ?\])
            (when (and (not lit) (not executing-kbd-macro) bpf)
              (funcall bpf))))))
 
@@ -175,7 +175,7 @@ line of the brace."
       (when (newlines-p after)
         (c-newline-and-indent)))))
 
-(defun c-hack-electric-brace (arg)
+(defun plunder-electric-brace (arg)
   "This is a modified version of `c-electric-brace'.  It inserts
 balanced braces or move past a closing one.
 
@@ -200,7 +200,7 @@ settings of `c-cleanup-list' are done."
 
     (if (or lit (eq last-command-event ?\{))
         (self-insert-command (prefix-numeric-value arg))
-      (c-hack-move-past-close ?\}))
+      (plunder-move-past-close ?\}))
 
     (when (and c-electric-flag (not lit) (not arg))
       (cond ((looking-at "[ \t]*\\\\?$")
@@ -219,7 +219,7 @@ settings of `c-cleanup-list' are done."
     ;; Blink the paren or balance with a closing brace.
     (unless lit
       (case last-command-event
-        (?\{ (c-hack-balance ?\}))
+        (?\{ (plunder-balance ?\}))
         (?\} (when (and (not executing-kbd-macro) bpf)
                (save-excursion
                  (c-save-buffer-state ()
@@ -241,7 +241,7 @@ settings of `c-cleanup-list' are done."
                  `((goto-char begin-ws)
                    ,@body))))))))
 
-(defun c-hack-electric-paren (arg)
+(defun plunder-electric-paren (arg)
   "This is a modified version of `c-electric-paren'. It inserts
  balanced parenthesis or move past the closing one.
 
@@ -261,7 +261,7 @@ newline cleanups are done if appropriate; see the variable `c-cleanup-list'."
         blink-paren-function)
     (if (or lit (eq last-command-event ?\())
         (self-insert-command (prefix-numeric-value arg))
-      (c-hack-move-past-close ?\)))
+      (plunder-move-past-close ?\)))
 
     (when (and (not arg) (not lit))
       (when c-electric-flag
@@ -283,7 +283,7 @@ newline cleanups are done if appropriate; see the variable `c-cleanup-list'."
                                             (c-forward-over-cpp-define-id)
                                             (eq (point) begin-ws)))))
                (insert ?\ ))
-             (c-hack-balance ?\)))
+             (plunder-balance ?\)))
         (?\) (delspaces (compact-empty-funcall
                          :before "()"
                          :if (c-on-identifier)))
@@ -309,7 +309,7 @@ locations of the beginning and the end the expression."
             end (sexp-endp)))
     (values (buffer-substring beg end) beg end)))
 
-(defun c-hack-raise-sexp ()
+(defun plunder-raise-sexp ()
   "Raise the S-expression after point or the active region to one
 level of parenthesis, braces or brackets -- deleting the other
 ones.
@@ -318,13 +318,13 @@ a*(b+|c-d) -> a* |c"
 
   (interactive "*")
   (multiple-value-bind (sexp beg end) (sexp-or-region)
-    (let ((p (progn (c-hack-backward-up-list) (point))))
+    (let ((p (progn (plunder-backward-up-list) (point))))
       (delete-region p (sexp-endp))
       (insert sexp)
       (goto-char p)
       (insert-blank))))
 
-(defun c-hack-splice-sexp ()
+(defun plunder-splice-sexp ()
   "Splice the list the point is on by removing its delimiters:
 parenthesis, brackets or braces.
 
@@ -332,7 +332,7 @@ a * (b + |c) * d -> a * b + |c * d"
 
   (interactive "*")
   (save-excursion
-    (c-hack-backward-up-list)
+    (plunder-backward-up-list)
     (let ((p (point)))
       (forward-sexp)
       (delete-backward-char 1)
@@ -340,32 +340,32 @@ a * (b + |c) * d -> a * b + |c * d"
       (delete-char 1)
       (insert-blank))))
 
-(defun c-hack-wrap-sexp (open close)
+(defun plunder-wrap-sexp (open close)
   (multiple-value-bind (sexp beg end) (sexp-or-region)
     (delete-region beg end)
     (insert open)
     (insert close)
     (backward-char)
     (insert sexp)
-    (c-hack-backward-up-list)))
+    (plunder-backward-up-list)))
 
-(defun c-hack-wrap-sexp-in-paren ()
+(defun plunder-wrap-sexp-in-paren ()
   "Wrap the S-expression at point or the active region inside
 parenthesis.
 
 |a + b -> |(a) + b"
   (interactive "*")
-  (c-hack-wrap-sexp ?\( ?\)))
+  (plunder-wrap-sexp ?\( ?\)))
 
-(defun c-hack-wrap-sexp-in-bracket ()
+(defun plunder-wrap-sexp-in-bracket ()
   "Wrap the S-expression at point or the active region inside
 brackets.
 
 a |i -> a |[i]"
   (interactive "*")
-  (c-hack-wrap-sexp ?\[ ?\]))
+  (plunder-wrap-sexp ?\[ ?\]))
 
-(defun c-hack-wrap-sexp-in-brace ()
+(defun plunder-wrap-sexp-in-brace ()
   "Wrap the statement after point or the active region inside
 braces and indent the expression.
 
@@ -380,9 +380,9 @@ braces and indent the expression.
     (let ((sexp (buffer-substring beg end))
           (last-command-event ?\{))
       (delete-region beg end)
-      (c-hack-electric-brace nil)
+      (plunder-electric-brace nil)
       (insert sexp)
-      (c-hack-backward-up-list)
+      (plunder-backward-up-list)
       (c-indent-exp))))
 
-(provide 'c-hack)
+(provide 'plunder)
