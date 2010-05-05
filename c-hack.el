@@ -299,10 +299,17 @@ works with macros."
       '(before after))))
 
 (defsubst insert-blank ()
-  (when (and (looking-at "[^ \t\n]") (looking-back "[^ \t\n]"))
+  (when (and (looking-at "[^ \t\n]")
+             (looking-back "[^ \t\n]"))
     (insert ?\ )))
 
 (defun c-hack-raise-sexp ()
+  "Raise the S-expression after point or the active region to one
+level of parenthesis, braces or brackets -- deleting the other
+ones.
+
+a*(b+|c) -> a* |c"
+
   (interactive "*")
   (flet ((sexp-endp () (save-excursion (forward-sexp) (point))))
     (let (beg end)
@@ -319,6 +326,11 @@ works with macros."
         (insert-blank)))))
 
 (defun c-hack-splice-sexp ()
+  "Splice the list the point is on by removing its delimiters:
+parenthesis, brackets or braces.
+
+a * (b + |c) * d -> a * b + |c * d"
+
   (interactive "*")
   (save-excursion
     (c-hack-backward-up-list)
