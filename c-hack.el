@@ -314,8 +314,10 @@ works with macros."
       (let ((sexp (buffer-substring beg end)))
         (c-hack-backward-up-list)
         (delete-region (point) (sexp-endp))
-        (insert-blank)
-        (insert sexp)))))
+        (let ((p (point)))
+          (insert sexp)
+          (goto-char p)
+          (insert-blank))))))
 
 (defun c-hack-splice-sexp ()
   (interactive "*")
