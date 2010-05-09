@@ -129,11 +129,21 @@ past the closing token inside a nested expression."
 
 (defmacro cleanup-p (sym) `(memq ',sym c-cleanup-list))
 
-(defmacro do-cleanup (&rest entries)
+(defmacro do-cleanup (&rest clauses)
+  "do-cleanup is a dispatcher like cond that executes the forms in
+a clause if some conditions are met.
+
+Each clause has the form:
+  (CLEANUP-TYPE [:delete-match N] RE*) FORMS.
+
+If CLEANUP-TYPE is in `c-cleanup-list', and the list of regular
+expressions RE* given as arguments to `re-bsearch' finds a match,
+then the match number N (0 by default) is deleted and the
+expressions FORMS are executed."
   `(cond
-    ,@(mapcar #'(lambda (entry)
+    ,@(mapcar #'(lambda (clause)
                   (destructuring-bind
-                      ((type head &rest re) &rest body) entry
+                      ((type head &rest re) &rest body) clause
                     (let ((i 0))
                       (if (eq :delete-match head)
                           (progn
@@ -146,7 +156,7 @@ past the closing token inside a nested expression."
                         ,@(when (plusp i)
                             `((goto-char (match-beginning ,i))))
                         ,@body))))
-              entries)))
+              clauses)))
 
 (defun brace-cleanup (stx)
   "Do various newline cleanups based on the settings of
@@ -241,6 +251,13 @@ settings of `c-cleanup-list' are done."
                  (funcall bpf))))))))
 
 (defmacro delspaces (cond &rest body)
+  "Syntax: delspaces (CLEANUP-TYPE :before RE :if COND) FORMS
+
+If CLEANUP-TYPE is in `c-cleanup-list' and by researching
+backward from point, we find whitespaces before RE, and COND is
+true (the variables BEGIN-WS and END-WS are bound to the
+beginning and end of the match) then the whitespaces are deleted
+and FORMS are executed."
   (declare (indent defun))
   (destructuring-bind (type &key before if) cond
     `(save-excursion
