@@ -12,7 +12,7 @@
 ;;; purpose.  See the GNU General Public License for more details.
 ;;; See http://www.gnu.org/licenses/ for details.
 
-(eval-and-compile
+(eval-when-compile
   (require 'cc-cmds)
   (require 'cl))
 
@@ -76,16 +76,11 @@ of parentheses."
   "Search backward the concatenation of the REs given as
 arguments separated by spaces.  Returns true if the beginning of
 the match is not in a literal."
-  (let ((space "\\(?:[ \t\n]\\|\\\\\n\\)*"))
-    `(save-excursion
-       (and (re-search-backward
-             (concat ,@(mapcon #'(lambda (args)
-                                   (if (cdr args)
-                                       (list (car args) space)
-                                     (list (car args))))
-                               res))
-             nil t)
-            (not (liter-p))))))
+  `(save-excursion
+     (and (re-search-backward
+           ,(mapconcat #'identity res "\\(?:[ \t\n]\\|\\\\\n\\)*")
+           nil t)
+          (not (liter-p)))))
 
 (defun plunder-move-past-close (close)
   "Delete the trailing blanks before the closing token and move
