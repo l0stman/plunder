@@ -365,7 +365,12 @@ a * (b + |c) * d -> a * b + |c * d"
       (goto-char p)
       (delete-char 1)
       (insert-blank)
-      (delete-trailing-whitespace))))
+      (delete-trailing-whitespace)
+      (condition-case nil
+          (progn
+            (plunder-backward-up-list)
+            (c-indent-exp))
+        ((Scan error) nil)))))
 
 (defun plunder-wrap-sexp (open close)
   (multiple-value-bind (sexp beg end) (sexp-or-region)
