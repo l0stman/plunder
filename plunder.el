@@ -364,7 +364,8 @@ a * (b + |c) * d -> a * b + |c * d"
       (delete-backward-char 1)
       (goto-char p)
       (delete-char 1)
-      (insert-blank))))
+      (insert-blank)
+      (delete-trailing-whitespace))))
 
 (defun plunder-wrap-sexp (open close)
   (multiple-value-bind (sexp beg end) (sexp-or-region)
@@ -402,7 +403,7 @@ braces and indent the expression.
         (setq beg (region-beginning)
               end (region-end))
       (setq beg (point)
-            end  (progn (c-end-of-statement) (point))))
+            end (progn (c-end-of-statement) (point))))
     (let ((sexp (buffer-substring (progn (goto-char beg)
                                          (skip-chars-forward " \t\n")
                                          (point))
