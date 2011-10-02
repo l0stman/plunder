@@ -1,5 +1,5 @@
 ;;; plunder.el -- minor mode for structurally editing C code.
-;;; Copyright (C) 2010 rrl <endian.sign@gmail.com>
+;;; Copyright (C) 2010-2011 rrl <endian.sign@gmail.com>
 
 ;;; Repository: http://github.com/l0stman/plunder
 
