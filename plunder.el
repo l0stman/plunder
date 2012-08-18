@@ -361,7 +361,7 @@ a * (b + |c) * d -> a * b + |c * d"
     (plunder-backward-up-list)
     (let ((p (point)))
       (forward-sexp)
-      (delete-backward-char 1)
+      (delete-char -1)
       (goto-char p)
       (delete-char 1)
       (insert-blank)
