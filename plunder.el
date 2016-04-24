@@ -16,6 +16,23 @@
   (require 'cc-cmds)
   (require 'cl))
 
+(declare-function c-newline-and-indent "cc-cmds" nil)
+(declare-function c-indent-line-or-region "cc-cmds" nil)
+(declare-function c-in-literal "cc-mods" (&optional lim detect-cpp))
+(declare-function c-try-one-liner "cc-mods" nil)
+(declare-function c-point-syntax "cc-mods" nil)
+(declare-function c-brace-newlines "cc-mods" (syntax))
+(declare-function c-indent-line "cc-mods"
+                  (&optional syntax quiet ignore-point-pos))
+(declare-function c-safe-position "cc-mods" (bufpos paren-state))
+(declare-function c-parse-state "cc-mods" nil)
+(declare-function c-backward-sws "cc-mods" nil)
+(declare-function c-on-identifier "cc-mods" nil)
+(declare-function c-beginning-of-macro "cc-mods" nil)
+(declare-function c-forward-over-cpp-define-id "cc-mods" nil)
+(declare-function c-indent-exp "cc-mods" nil)
+(declare-function c-end-of-statement "cc-mods" nil)
+
 (define-minor-mode plunder-mode
   "Minor mode for pseudo-structurally editing C code.
 \\{plunder-mode-map}"
@@ -59,10 +76,10 @@
   "Move backward or forward if forward-p is true out of one level
 of parentheses."
   (interactive)
-  (flet ((matchp (l r)
-                 (or (and (eq l ?\() (eq r ?\)))
-                     (and (eq l ?\[) (eq r ?\]))
-                     (and (eq l ?\{) (eq r ?\})))))
+  (cl-flet ((matchp (l r)
+                    (or (and (eq l ?\() (eq r ?\)))
+                        (and (eq l ?\[) (eq r ?\]))
+                        (and (eq l ?\{) (eq r ?\})))))
     (up-list)
     (let ((rtok (char-before))
           (ltok (progn (backward-sexp) (char-after))))
