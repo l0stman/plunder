@@ -75,7 +75,7 @@
 (defun plunder-backward-up-list (&optional forward-p)
   "Move backward or forward if forward-p is true out of one level
 of parentheses."
-  (interactive)
+  (interactive "P")
   (cl-flet ((matchp (l r)
                     (or (and (eq l ?\() (eq r ?\)))
                         (and (eq l ?\[) (eq r ?\]))
