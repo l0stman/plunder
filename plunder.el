@@ -12,9 +12,10 @@
 ;;; purpose.  See the GNU General Public License for more details.
 ;;; See http://www.gnu.org/licenses/ for details.
 
+;;; Code:
 (eval-when-compile
   (require 'cc-cmds)
-  (require 'cl))
+  (require 'cl-lib))
 
 (declare-function c-newline-and-indent "cc-cmds" nil)
 (declare-function c-indent-line-or-region "cc-cmds" nil)
@@ -104,25 +105,25 @@ the match is not in a literal."
 past it, eventually leaving a newline.  It's possible to move
 past the closing token inside a nested expression."
   (interactive "*")
-  (loop with rtok
-        do
-        (condition-case ()
-            (plunder-backward-up-list t)
-          (scan-error (error "Unbalanced %c." close)))
-        (setq rtok (char-before))
-        (let ((line-p (newlinep rtok)))
-          (save-excursion
-            (backward-char)
-            (delete-region (point)
-                           (if (re-search-backward "[^ \t\n\\]" nil t)
-                               (let ((lit (liter-p)))
-                                 (if (or line-p
-                                         (and lit (not (eq lit 'string))))
-                                     (forward-line)
-                                   (forward-char))
-                                 (point))
-                             (point-min)))))
-        until (eq rtok close)))
+  (cl-loop with rtok
+           do
+           (condition-case ()
+               (plunder-backward-up-list t)
+             (scan-error (error "Unbalanced %c." close)))
+           (setq rtok (char-before))
+           (let ((line-p (newlinep rtok)))
+             (save-excursion
+               (backward-char)
+               (delete-region (point)
+                              (if (re-search-backward "[^ \t\n\\]" nil t)
+                                  (let ((lit (liter-p)))
+                                    (if (or line-p
+                                            (and lit (not (eq lit 'string))))
+                                        (forward-line)
+                                      (forward-char))
+                                    (point))
+                                (point-min)))))
+           until (eq rtok close)))
 
 (defun plunder-bracket (arg)
   "Insert a balanced bracket or move past the closing one."
@@ -154,7 +155,7 @@ then the match number N (0 by default) is deleted and the
 expressions FORMS are executed."
   `(cond
     ,@(mapcar #'(lambda (clause)
-                  (destructuring-bind
+                  (cl-destructuring-bind
                       ((type head &rest re) &rest body) clause
                     (let ((i 0))
                       (if (eq :delete-match head)
@@ -165,7 +166,7 @@ expressions FORMS are executed."
                       `((and (cleanup-p ,type) (re-bsearch ,@re))
                         (delete-region (match-beginning ,i)
                                        (match-end ,i))
-                        ,@(when (plusp i)
+                        ,@(when (cl-plusp i)
                             `((goto-char (match-beginning ,i))))
                         ,@body))))
               clauses)))
@@ -174,8 +175,8 @@ expressions FORMS are executed."
   "Do various newline cleanups based on the settings of
 `c-cleanup-list'. `stx' is the syntactic context of the line the
 brace ends up on."
-  (macrolet ((syntax-p (&rest args) `(c-intersect-lists ',args stx)))
-    (case last-command-event
+  (cl-macrolet ((syntax-p (&rest args) `(c-intersect-lists ',args stx)))
+    (cl-case last-command-event
       (?\}
        (when (and (cleanup-p empty-defun-braces)
                   (syntax-p defun-close class-close inline-close)
@@ -198,7 +199,7 @@ on the brace and `lstx' is the syntactic context of the original
 line of the brace."
   (let* ((bstx (c-point-syntax))
          (newlines (c-brace-newlines bstx)))
-    (macrolet ((newlines-p (sym) `(memq ',sym newlines)))
+    (cl-macrolet ((newlines-p (sym) `(memq ',sym newlines)))
       (when (and (newlines-p before)
                  (> (current-column) (current-indentation)))
         (if c-syntactic-indentation
@@ -254,7 +255,7 @@ settings of `c-cleanup-list' are done."
 
     ;; Blink the paren or balance with a closing brace.
     (unless lit
-      (case last-command-event
+      (cl-case last-command-event
         (?\{ (plunder-balance ?\}))
         (?\} (when (and (not executing-kbd-macro) bpf)
                (save-excursion
@@ -271,7 +272,7 @@ true (the variables BEGIN-WS and END-WS are bound to the
 beginning and end of the match) then the whitespaces are deleted
 and FORMS are executed."
   (declare (indent defun))
-  (destructuring-bind (type &key before if) cond
+  (cl-destructuring-bind (type &key before if) cond
     `(save-excursion
        (when (and (cleanup-p ,type)
                   (re-search-backward
@@ -318,7 +319,7 @@ newline cleanups are done if appropriate; see the variable `c-cleanup-list'."
                       ((brace-catch-brace "}" "catch" "(\\=")
                        (insert-and-inherit "} catch (")))))
 
-      (case last-command-event
+      (cl-case last-command-event
         (?\( (delspaces (space-before-funcall
                          :before "("
                          :if (and (c-on-identifier)
@@ -350,7 +351,7 @@ locations of the beginning and the end the expression."
               end (region-end))
       (setq beg (point)
             end (sexp-endp)))
-    (values (buffer-substring beg end) beg end)))
+    (cl-values (buffer-substring beg end) beg end)))
 
 (defun plunder-raise-sexp ()
   "Raise the S-expression after point or the active region to one
@@ -360,7 +361,7 @@ ones.
 a*(b+|c-d) -> a* |c"
 
   (interactive "*")
-  (multiple-value-bind (sexp beg end) (sexp-or-region)
+  (cl-multiple-value-bind (sexp beg end) (sexp-or-region)
     (let ((p (progn (plunder-backward-up-list) (point))))
       (delete-region p (sexp-endp))
       (insert sexp)
@@ -390,7 +391,7 @@ a * (b + |c) * d -> a * b + |c * d"
         ((Scan error) nil)))))
 
 (defun plunder-wrap-sexp (open close)
-  (multiple-value-bind (sexp beg end) (sexp-or-region)
+  (cl-multiple-value-bind (sexp beg end) (sexp-or-region)
     (delete-region beg end)
     (insert open)
     (insert close)
