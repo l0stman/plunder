@@ -336,7 +336,7 @@ newline cleanups are done if appropriate; see the variable `c-cleanup-list'."
 
 (defsubst insert-blank ()
   (when (and (looking-at "[^ \t\n]")
-             (looking-back "[^ \t\n]"))
+             (looking-back "[^ \t\n]" nil))
     (insert ?\ )))
 
 (defsubst sexp-endp ()
